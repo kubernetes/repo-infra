@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strings"
 
 	bzl "github.com/bazelbuild/buildifier/core"
@@ -128,10 +129,6 @@ func (v *Venderor) walkRepo() error {
 }
 
 func (v *Venderor) updateSinglePkg(path string) error {
-	ipath, err := filepath.Rel(kubeRoot, path)
-	if err != nil {
-		return err
-	}
 	pkg, err := v.ctx.ImportDir("./"+path, build.ImportComment)
 	if err != nil {
 		if _, ok := err.(*build.NoGoError); err != nil && ok {
@@ -140,7 +137,8 @@ func (v *Venderor) updateSinglePkg(path string) error {
 			return err
 		}
 	}
-	return v.updatePkg(path, ipath, pkg)
+	glog.Infof("here")
+	return v.updatePkg(path, "", pkg)
 }
 
 func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
@@ -180,7 +178,7 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 		}))
 	}
 
-	fmt.Fprintf(os.Stderr, "updated %s\n", pkg.ImportPath)
+	fmt.Fprintf(os.Stderr, "updated %q\n", pkg.ImportPath)
 	return ReconcileRules(filepath.Join(path, "BUILD"), rules)
 }
 
@@ -352,11 +350,53 @@ func newRule(kind, name string, attrs map[string]bzl.Expr) *bzl.Rule {
 		},
 	}
 	rule.SetAttr("name", asExpr(name))
-	for k, v := range attrs {
-		rule.SetAttr(k, v)
+	for _, k := range sortKeys(attrs) {
+		rule.SetAttr(k, attrs[k])
 	}
 	rule.SetAttr("tags", asExpr([]string{"automanaged"}))
 	return rule
+}
+
+func sortKeys(attrs map[string]bzl.Expr) []string {
+	ks := []string{}
+	for k, _ := range attrs {
+		ks = append(ks, k)
+	}
+	sort.Sort(orderedAttrs(ks))
+	return ks
+}
+
+type orderedAttrs []string
+
+var orderedAttrsPriority = map[string]int{
+	"name":    1,
+	"srcs":    2,
+	"deps":    3,
+	"library": 4,
+	"tags":    5,
+}
+
+func (o orderedAttrs) Len() int {
+	return len(o)
+}
+
+func (o orderedAttrs) Swap(i, j int) {
+	o[i], o[j] = o[j], o[i]
+}
+
+func (o orderedAttrs) Less(i, j int) bool {
+	ip, iok := orderedAttrsPriority[o[i]]
+	jp, jok := orderedAttrsPriority[o[j]]
+	if iok && jok {
+		return ip < jp
+	}
+	if iok && !jok {
+		return false
+	}
+	if jok && !iok {
+		return true
+	}
+	return o[i] < o[j]
 }
 
 func ReconcileRules(path string, rules []*bzl.Rule) error {

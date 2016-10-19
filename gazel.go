@@ -1,8 +1,3 @@
-// $ go run gazel.go -r ./vendor
-// $ go run gazel.go -r ./federation
-// $ go run gazel.go -r ./contrib
-// $ go run gazel.go -r ./plugin
-// $ go run gazel.go -r ./test
 package main
 
 import (

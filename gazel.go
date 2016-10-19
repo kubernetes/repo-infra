@@ -14,7 +14,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strings"
 
 	bzl "github.com/bazelbuild/buildifier/core"
@@ -30,8 +29,8 @@ func main() {
 	v := Venderor{
 		ctx: &build.Default,
 	}
-	if len(os.Args) == 2 {
-		v.updateSinglePkg(os.Args[1])
+	if len(flag.Args()) == 2 {
+		v.updateSinglePkg(flag.Args()[1])
 	} else {
 		v.walkVendor()
 		if err := v.walkRepo(); err != nil {
@@ -357,53 +356,11 @@ func newRule(kind, name string, attrs map[string]bzl.Expr) *bzl.Rule {
 		},
 	}
 	rule.SetAttr("name", asExpr(name))
-	for _, k := range sortKeys(attrs) {
-		rule.SetAttr(k, attrs[k])
+	for k, v := range attrs {
+		rule.SetAttr(k, v)
 	}
 	rule.SetAttr("tags", asExpr([]string{"automanaged"}))
 	return rule
-}
-
-func sortKeys(attrs map[string]bzl.Expr) []string {
-	ks := []string{}
-	for k, _ := range attrs {
-		ks = append(ks, k)
-	}
-	sort.Sort(orderedAttrs(ks))
-	return ks
-}
-
-type orderedAttrs []string
-
-var orderedAttrsPriority = map[string]int{
-	"name":    1,
-	"srcs":    2,
-	"deps":    3,
-	"library": 4,
-	"tags":    5,
-}
-
-func (o orderedAttrs) Len() int {
-	return len(o)
-}
-
-func (o orderedAttrs) Swap(i, j int) {
-	o[i], o[j] = o[j], o[i]
-}
-
-func (o orderedAttrs) Less(i, j int) bool {
-	ip, iok := orderedAttrsPriority[o[i]]
-	jp, jok := orderedAttrsPriority[o[j]]
-	if iok && jok {
-		return ip < jp
-	}
-	if iok && !jok {
-		return false
-	}
-	if jok && !iok {
-		return true
-	}
-	return o[i] < o[j]
 }
 
 func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
@@ -412,7 +369,7 @@ func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
 		f := &bzl.File{}
 		writeHeaders(f)
 		writeRules(f, rules)
-		return true, writeFile(path, bzl.Format(f))
+		return writeFile(path, f, false)
 	} else if err != nil {
 		return false, err
 	}
@@ -458,15 +415,7 @@ func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
 		}
 		f.DelRules(r.Kind(), r.Name())
 	}
-	out := bzl.Format(f)
-	orig, err := ioutil.ReadFile(path)
-	if err != nil {
-		return false, err
-	}
-	if bytes.Compare(out, orig) == 0 {
-		return false, err
-	}
-	return true, writeFile(path, bzl.Format(f))
+	return writeFile(path, f, true)
 }
 
 func RuleIsManaged(r *bzl.Rule) bool {
@@ -480,10 +429,22 @@ func RuleIsManaged(r *bzl.Rule) bool {
 	return automanaged
 }
 
-func writeFile(path string, b []byte) error {
-	if *dryRun {
-		return nil
+func writeFile(path string, f *bzl.File, exists bool) (bool, error) {
+	var info bzl.RewriteInfo
+	bzl.Rewrite(f, &info)
+	out := bzl.Format(f)
+	if exists {
+		orig, err := ioutil.ReadFile(path)
+		if err != nil {
+			return false, err
+		}
+		if bytes.Compare(out, orig) == 0 {
+			return false, nil
+		}
 	}
-	return ioutil.WriteFile(path, b, 0644)
+	if *dryRun {
+		return true, nil
+	}
+	return true, ioutil.WriteFile(path, out, 0644)
 
 }

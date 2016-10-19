@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"go/build"
@@ -178,8 +179,14 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 		}))
 	}
 
-	fmt.Fprintf(os.Stderr, "updated %q\n", pkg.ImportPath)
-	return ReconcileRules(filepath.Join(path, "BUILD"), rules)
+	wrote, err := ReconcileRules(filepath.Join(path, "BUILD"), rules)
+	if err != nil {
+		return err
+	}
+	if wrote {
+		fmt.Fprintf(os.Stderr, "wrote BUILD for %q\n", pkg.ImportPath)
+	}
+	return nil
 }
 
 func (v *Venderor) walkVendor() {
@@ -234,7 +241,7 @@ func (v *Venderor) walkVendor() {
 	}); err != nil {
 		glog.Fatalf("err: %v", err)
 	}
-	if err := ReconcileRules("./vendor/BUILD", rules); err != nil {
+	if _, err := ReconcileRules("./vendor/BUILD", rules); err != nil {
 		glog.Fatalf("err: %v", err)
 	}
 }
@@ -399,26 +406,26 @@ func (o orderedAttrs) Less(i, j int) bool {
 	return o[i] < o[j]
 }
 
-func ReconcileRules(path string, rules []*bzl.Rule) error {
+func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
 		f := &bzl.File{}
 		writeHeaders(f)
 		writeRules(f, rules)
-		return ioutil.WriteFile(path, bzl.Format(f), 0644)
+		return true, ioutil.WriteFile(path, bzl.Format(f), 0644)
 	} else if err != nil {
-		return err
+		return false, err
 	}
 	if info.IsDir() {
-		return fmt.Errorf("%q cannot be a directory", path)
+		return false, fmt.Errorf("%q cannot be a directory", path)
 	}
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return false, err
 	}
 	f, err := bzl.Parse(path, b)
 	if err != nil {
-		return err
+		return false, err
 	}
 	oldRules := make(map[string]*bzl.Rule)
 	for _, r := range f.Rules("") {
@@ -451,7 +458,15 @@ func ReconcileRules(path string, rules []*bzl.Rule) error {
 		}
 		f.DelRules(r.Kind(), r.Name())
 	}
-	return ioutil.WriteFile(path, bzl.Format(f), 0644)
+	out := bzl.Format(f)
+	orig, err := ioutil.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+	if bytes.Compare(out, orig) == 0 {
+		return false, err
+	}
+	return true, ioutil.WriteFile(path, bzl.Format(f), 0644)
 }
 
 func RuleIsManaged(r *bzl.Rule) bool {

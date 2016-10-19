@@ -22,6 +22,7 @@ import (
 )
 
 var kubeRoot = os.Getenv("KUBE_ROOT")
+var dryRun = flag.Bool("dry-run", false, "run in dry mode")
 
 func main() {
 	flag.Parse()
@@ -138,7 +139,6 @@ func (v *Venderor) updateSinglePkg(path string) error {
 			return err
 		}
 	}
-	glog.Infof("here")
 	return v.updatePkg(path, "", pkg)
 }
 
@@ -412,7 +412,7 @@ func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
 		f := &bzl.File{}
 		writeHeaders(f)
 		writeRules(f, rules)
-		return true, ioutil.WriteFile(path, bzl.Format(f), 0644)
+		return true, writeFile(path, bzl.Format(f))
 	} else if err != nil {
 		return false, err
 	}
@@ -466,7 +466,7 @@ func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
 	if bytes.Compare(out, orig) == 0 {
 		return false, err
 	}
-	return true, ioutil.WriteFile(path, bzl.Format(f), 0644)
+	return true, writeFile(path, bzl.Format(f))
 }
 
 func RuleIsManaged(r *bzl.Rule) bool {
@@ -478,4 +478,12 @@ func RuleIsManaged(r *bzl.Rule) bool {
 		}
 	}
 	return automanaged
+}
+
+func writeFile(path string, b []byte) error {
+	if *dryRun {
+		return nil
+	}
+	return ioutil.WriteFile(path, b, 0644)
+
 }

@@ -24,8 +24,8 @@ func main() {
 	v := Venderor{
 		ctx: &build.Default,
 	}
-	if len(flag.Args()) == 2 {
-		v.updateSinglePkg(flag.Args()[1])
+	if len(flag.Args()) == 1 {
+		v.updateSinglePkg(flag.Args()[0])
 	} else {
 		v.walkVendor()
 		if err := v.walkRepo(); err != nil {
@@ -178,7 +178,7 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 		return err
 	}
 	if wrote {
-		fmt.Fprintf(os.Stderr, "wrote BUILD for %q\n", pkg.ImportPath)
+		fmt.Fprintf(os.Stderr, "wrote BUILD for %q\n", pkg.Dir)
 	}
 	return nil
 }

@@ -15,12 +15,15 @@ import (
 	"github.com/golang/glog"
 )
 
-var kubeRoot = os.Getenv("KUBE_ROOT")
+var kubeRoot = flag.String("root", "", "root of kubernetes source")
 var dryRun = flag.Bool("dry-run", false, "run in dry mode")
 
 func main() {
 	flag.Parse()
 	flag.Set("alsologtostderr", "true")
+	if *kubeRoot == "" {
+		glog.Fatalf("-root argument is required")
+	}
 	v := Venderor{
 		ctx: &build.Default,
 	}
@@ -95,7 +98,7 @@ func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Packa
 		if !info.IsDir() {
 			return nil
 		}
-		pkg, err := v.ctx.ImportDir(filepath.Join(kubeRoot, path), build.ImportComment)
+		pkg, err := v.ctx.ImportDir(filepath.Join(*kubeRoot, path), build.ImportComment)
 		if err != nil {
 			if _, ok := err.(*build.NoGoError); err != nil && ok {
 				return nil
@@ -245,8 +248,11 @@ func (v *Venderor) extractDeps(deps []string) *bzl.ListExpr {
 		apply(
 			merge(deps),
 			filterer(func(s string) bool {
-				pkg, err := v.ctx.Import(s, kubeRoot, build.ImportComment)
+				pkg, err := v.ctx.Import(s, *kubeRoot, build.ImportComment)
 				if err != nil {
+					if !strings.Contains(err.Error(), `cannot find package "C"`) {
+						fmt.Fprintf(os.Stderr, "extract err: %v\n", err)
+					}
 					return false
 				}
 				if pkg.Goroot {

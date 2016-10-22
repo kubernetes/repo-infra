@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 
 	bzl "github.com/bazelbuild/buildifier/core"
@@ -25,7 +26,7 @@ func main() {
 		glog.Fatalf("-root argument is required")
 	}
 	v := Venderor{
-		ctx: &build.Default,
+		ctx: context(),
 	}
 	if len(flag.Args()) == 1 {
 		v.updateSinglePkg(flag.Args()[0])
@@ -448,4 +449,16 @@ func writeFile(path string, f *bzl.File, exists bool) (bool, error) {
 	}
 	return true, ioutil.WriteFile(path, out, 0644)
 
+}
+
+func context() *build.Context {
+	return &build.Context{
+		GOARCH:      "amd64",
+		GOOS:        "linux",
+		GOROOT:      build.Default.GOROOT,
+		GOPATH:      build.Default.GOPATH,
+		ReleaseTags: []string{"go1.1", "go1.2", "go1.3", "go1.4", "go1.5", "go1.6", "go1.7"},
+		Compiler:    runtime.Compiler,
+		CgoEnabled:  true,
+	}
 }

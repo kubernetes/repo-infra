@@ -12,6 +12,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/mikedanese/gazel/third_party/go/path/filepath"
+
 	bzl "github.com/bazelbuild/buildifier/core"
 	"github.com/golang/glog"
 )
@@ -91,7 +93,7 @@ func (v *Venderor) resolve(ipath string) Label {
 }
 
 func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Package) error) error {
-	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	return sfilepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		ipath, err := filepath.Rel(root, path)
 		if err != nil {
 			return err
@@ -461,4 +463,8 @@ func context() *build.Context {
 		Compiler:    runtime.Compiler,
 		CgoEnabled:  true,
 	}
+}
+
+func walk(root string, walkFn filepath.WalkFunc) error {
+	return nil
 }

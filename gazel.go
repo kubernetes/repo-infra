@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -20,6 +21,10 @@ import (
 
 var kubeRoot = flag.String("root", "", "root of kubernetes source")
 var dryRun = flag.Bool("dry-run", false, "run in dry mode")
+
+var skippedPaths = []*regexp.Regexp{
+	regexp.MustCompile("pkg\\/client\\/clientset_generated\\/release_1_(3|4)"),
+}
 
 func main() {
 	flag.Parse()
@@ -96,6 +101,11 @@ func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Packa
 	return sfilepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
+		}
+		for _, r := range skippedPaths {
+			if r.Match([]byte(path)) {
+				return nil
+			}
 		}
 		ipath, err := filepath.Rel(root, path)
 		if err != nil {
@@ -256,9 +266,13 @@ func (v *Venderor) extractDeps(deps []string) *bzl.ListExpr {
 			filterer(func(s string) bool {
 				pkg, err := v.ctx.Import(s, *kubeRoot, build.ImportComment)
 				if err != nil {
-					if !strings.Contains(err.Error(), `cannot find package "C"`) {
-						fmt.Fprintf(os.Stderr, "extract err: %v\n", err)
+					if strings.Contains(err.Error(), `cannot find package "C"`) ||
+						// added in go1.7
+						strings.Contains(err.Error(), `cannot find package "context"`) ||
+						strings.Contains(err.Error(), `cannot find package "net/http/httptrace"`) {
+						return false
 					}
+					fmt.Fprintf(os.Stderr, "extract err: %v\n", err)
 					return false
 				}
 				if pkg.Goroot {

@@ -94,6 +94,9 @@ func (v *Venderor) resolve(ipath string) Label {
 
 func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Package) error) error {
 	return sfilepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		ipath, err := filepath.Rel(root, path)
 		if err != nil {
 			return err

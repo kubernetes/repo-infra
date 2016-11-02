@@ -38,9 +38,11 @@ func main() {
 	if len(flag.Args()) == 1 {
 		v.updateSinglePkg(flag.Args()[0])
 	} else {
-		v.walkVendor()
+		if err := v.walkVendor(); err != nil {
+			glog.Fatalf("err walking vendor: %v", err)
+		}
 		if err := v.walkRepo(); err != nil {
-			glog.Fatalf("err: %v", err)
+			glog.Fatalf("err walking repo: %v", err)
 		}
 	}
 }
@@ -202,7 +204,7 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 	return nil
 }
 
-func (v *Venderor) walkVendor() {
+func (v *Venderor) walkVendor() error {
 	var rules []*bzl.Rule
 	if err := v.walk("./vendor", func(path, ipath string, pkg *build.Package) error {
 		var attrs Attrs = make(Attrs)
@@ -252,11 +254,16 @@ func (v *Venderor) walkVendor() {
 		}
 		return nil
 	}); err != nil {
-		glog.Fatalf("err: %v", err)
+		return err
 	}
-	if _, err := ReconcileRules("./vendor/BUILD", rules); err != nil {
-		glog.Fatalf("err: %v", err)
+	wrote, err := ReconcileRules("./vendor/BUILD", rules)
+	if err != nil {
+		return err
 	}
+	if wrote {
+		fmt.Fprintf(os.Stderr, "wrote BUILD for ./vendor/\n")
+	}
+	return nil
 }
 
 func (v *Venderor) extractDeps(deps []string) *bzl.ListExpr {

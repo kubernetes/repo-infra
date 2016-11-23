@@ -162,7 +162,6 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 
 	var attrs Attrs = make(Attrs)
 	srcs := asExpr(merge(pkg.GoFiles, pkg.SFiles)).(*bzl.ListExpr)
-	cgoSrcs := asExpr(merge(pkg.CgoFiles, pkg.CFiles, pkg.CXXFiles, pkg.HFiles)).(*bzl.ListExpr)
 
 	deps := v.extractDeps(pkg.Imports)
 
@@ -178,16 +177,6 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 	if pkg.IsCommand() {
 		rules = append(rules, newRule("go_binary", filepath.Base(pkg.Dir), attrs))
 	} else {
-		if len(cgoSrcs.List) != 0 {
-			cgoPname := "cgo_default_library"
-			cgoRule := newRule("cgo_library", cgoPname, map[string]bzl.Expr{
-				"srcs":      cgoSrcs,
-				"clinkopts": asExpr([]string{"-lz", "-lm", "-lpthread", "-ldl"}),
-				"deps":      v.extractDeps(pkg.TestImports),
-			})
-			rules = append(rules, cgoRule)
-			attrs["library"] = asExpr(cgoPname)
-		}
 		rules = append(rules, newRule("go_library", "go_default_library", attrs))
 		if len(pkg.TestGoFiles) != 0 {
 			rules = append(rules, newRule("go_test", "go_default_test", map[string]bzl.Expr{

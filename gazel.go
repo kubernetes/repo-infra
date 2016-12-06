@@ -19,22 +19,24 @@ import (
 	"github.com/golang/glog"
 )
 
-var kubeRoot = flag.String("root", "", "root of kubernetes source")
-var dryRun = flag.Bool("dry-run", false, "run in dry mode")
-
-var skippedPaths = []*regexp.Regexp{
-	regexp.MustCompile("pkg\\/client\\/clientset_generated\\/release_1_(3|4)"),
-}
+const vendorPath = "vendor/"
 
 func main() {
+	var (
+		root    = flag.String("root", "", "root of go source")
+		dryRun  = flag.Bool("dry-run", false, "run in dry mode")
+		cfgPath = flag.String("cfg-path", ".gazelcfg.json", "path to gazel config (relative paths interpreted relative to -repo.")
+	)
 	flag.Parse()
 	flag.Set("alsologtostderr", "true")
-	if *kubeRoot == "" {
+	if *root == "" {
 		glog.Fatalf("-root argument is required")
 	}
-	v := Venderor{
-		ctx: context(),
+	v, err := NewVendorer(*root, *cfgPath, *dryRun)
+	if err != nil {
+		glog.Fatalf("unable to build venderor: %v", err)
 	}
+
 	if len(flag.Args()) == 1 {
 		v.updateSinglePkg(flag.Args()[0])
 	} else {
@@ -47,8 +49,43 @@ func main() {
 	}
 }
 
-type Venderor struct {
-	ctx *build.Context
+type Vendorer struct {
+	ctx          *build.Context
+	skippedPaths []*regexp.Regexp
+	dryRun       bool
+	root         string
+	cfg          *Cfg
+}
+
+func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
+	cfg, err := ReadCfg(root, cfgPath)
+	if err != nil {
+		return nil, err
+	}
+
+	v := Vendorer{
+		ctx:    context(),
+		dryRun: dryRun,
+		root:   root,
+		cfg:    cfg,
+	}
+
+	for _, sp := range cfg.SkippedPaths {
+		r, err := regexp.Compile(sp)
+		if err != nil {
+			return nil, err
+		}
+		v.skippedPaths = append(v.skippedPaths, r)
+	}
+	for _, builtinSkip := range []string{
+		"^\\.git",
+		"^bazel-*",
+	} {
+		v.skippedPaths = append(v.skippedPaths, regexp.MustCompile(builtinSkip))
+	}
+
+	return &v, nil
+
 }
 
 func writeHeaders(file *bzl.File) {
@@ -86,10 +123,10 @@ func writeRules(file *bzl.File, rules []*bzl.Rule) {
 	}
 }
 
-func (v *Venderor) resolve(ipath string) Label {
-	if strings.HasPrefix(ipath, "k8s.io/kubernetes") {
+func (v *Vendorer) resolve(ipath string) Label {
+	if strings.HasPrefix(ipath, v.cfg.GoPrefix) {
 		return Label{
-			pkg: strings.TrimPrefix(ipath, "k8s.io/kubernetes/"),
+			pkg: strings.TrimPrefix(ipath, v.cfg.GoPrefix+"/"),
 			tag: "go_default_library",
 		}
 	}
@@ -99,24 +136,31 @@ func (v *Venderor) resolve(ipath string) Label {
 	}
 }
 
-func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Package) error) error {
+func (v *Vendorer) walk(root string, f func(path, ipath string, pkg *build.Package) error) error {
+	skipVendor := true
+	if root == vendorPath {
+		skipVendor = false
+	}
 	return sfilepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		for _, r := range skippedPaths {
-			if r.Match([]byte(path)) {
-				return nil
-			}
-		}
-		ipath, err := filepath.Rel(root, path)
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
 			return nil
 		}
-		pkg, err := v.ctx.ImportDir(filepath.Join(*kubeRoot, path), build.ImportComment)
+		if skipVendor && strings.HasPrefix(path, vendorPath) {
+			return filepath.SkipDir
+		}
+		for _, r := range v.skippedPaths {
+			if r.Match([]byte(path)) {
+				return filepath.SkipDir
+			}
+		}
+		ipath, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		pkg, err := v.ctx.ImportDir(filepath.Join(v.root, path), build.ImportComment)
 		if err != nil {
 			if _, ok := err.(*build.NoGoError); err != nil && ok {
 				return nil
@@ -129,15 +173,8 @@ func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Packa
 	})
 }
 
-func (v *Venderor) walkRepo() error {
-	for _, root := range []string{
-		"./pkg",
-		"./cmd",
-		"./third_party",
-		"./plugin",
-		"./test",
-		"./federation",
-	} {
+func (v *Vendorer) walkRepo() error {
+	for _, root := range v.cfg.SrcDirs {
 		if err := v.walk(root, v.updatePkg); err != nil {
 			return err
 		}
@@ -145,7 +182,7 @@ func (v *Venderor) walkRepo() error {
 	return nil
 }
 
-func (v *Venderor) updateSinglePkg(path string) error {
+func (v *Vendorer) updateSinglePkg(path string) error {
 	pkg, err := v.ctx.ImportDir("./"+path, build.ImportComment)
 	if err != nil {
 		if _, ok := err.(*build.NoGoError); err != nil && ok {
@@ -157,7 +194,7 @@ func (v *Venderor) updateSinglePkg(path string) error {
 	return v.updatePkg(path, "", pkg)
 }
 
-func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
+func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 	var rules []*bzl.Rule
 
 	var attrs Attrs = make(Attrs)
@@ -194,7 +231,7 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 		}))
 	}
 
-	wrote, err := ReconcileRules(filepath.Join(path, "BUILD"), rules)
+	wrote, err := ReconcileRules(filepath.Join(path, "BUILD"), rules, v.dryRun)
 	if err != nil {
 		return err
 	}
@@ -204,9 +241,9 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 	return nil
 }
 
-func (v *Venderor) walkVendor() error {
+func (v *Vendorer) walkVendor() error {
 	var rules []*bzl.Rule
-	if err := v.walk("./vendor", func(path, ipath string, pkg *build.Package) error {
+	if err := v.walk(vendorPath, func(path, ipath string, pkg *build.Package) error {
 		var attrs Attrs = make(Attrs)
 
 		srcs := asExpr(
@@ -256,7 +293,7 @@ func (v *Venderor) walkVendor() error {
 	}); err != nil {
 		return err
 	}
-	wrote, err := ReconcileRules("./vendor/BUILD", rules)
+	wrote, err := ReconcileRules("./vendor/BUILD", rules, v.dryRun)
 	if err != nil {
 		return err
 	}
@@ -266,12 +303,12 @@ func (v *Venderor) walkVendor() error {
 	return nil
 }
 
-func (v *Venderor) extractDeps(deps []string) *bzl.ListExpr {
+func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 	return asExpr(
 		apply(
 			merge(deps),
 			filterer(func(s string) bool {
-				pkg, err := v.ctx.Import(s, *kubeRoot, build.ImportComment)
+				pkg, err := v.ctx.Import(s, v.root, build.ImportComment)
 				if err != nil {
 					if strings.Contains(err.Error(), `cannot find package "C"`) ||
 						// added in go1.7
@@ -391,13 +428,13 @@ func newRule(kind, name string, attrs map[string]bzl.Expr) *bzl.Rule {
 	return rule
 }
 
-func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
+func ReconcileRules(path string, rules []*bzl.Rule, dryRun bool) (bool, error) {
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
 		f := &bzl.File{}
 		writeHeaders(f)
 		writeRules(f, rules)
-		return writeFile(path, f, false)
+		return writeFile(path, f, false, dryRun)
 	} else if err != nil {
 		return false, err
 	}
@@ -443,7 +480,7 @@ func ReconcileRules(path string, rules []*bzl.Rule) (bool, error) {
 		}
 		f.DelRules(r.Kind(), r.Name())
 	}
-	return writeFile(path, f, true)
+	return writeFile(path, f, true, dryRun)
 }
 
 func RuleIsManaged(r *bzl.Rule) bool {
@@ -457,7 +494,7 @@ func RuleIsManaged(r *bzl.Rule) bool {
 	return automanaged
 }
 
-func writeFile(path string, f *bzl.File, exists bool) (bool, error) {
+func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
 	var info bzl.RewriteInfo
 	bzl.Rewrite(f, &info)
 	out := bzl.Format(f)
@@ -470,7 +507,7 @@ func writeFile(path string, f *bzl.File, exists bool) (bool, error) {
 			return false, nil
 		}
 	}
-	if *dryRun {
+	if dryRun {
 		return true, nil
 	}
 	return true, ioutil.WriteFile(path, out, 0644)

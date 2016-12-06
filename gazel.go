@@ -51,6 +51,7 @@ func main() {
 
 type Vendorer struct {
 	ctx          *build.Context
+	icache       map[icacheKey]icacheVal
 	skippedPaths []*regexp.Regexp
 	dryRun       bool
 	root         string
@@ -67,6 +68,7 @@ func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 		ctx:    context(),
 		dryRun: dryRun,
 		root:   root,
+		icache: map[icacheKey]icacheVal{},
 		cfg:    cfg,
 	}
 
@@ -86,6 +88,27 @@ func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 
 	return &v, nil
 
+}
+
+type icacheKey struct {
+	path, srcDir string
+}
+
+type icacheVal struct {
+	pkg *build.Package
+	err error
+}
+
+func (v *Vendorer) importPkg(path string, srcDir string) (*build.Package, error) {
+	k := icacheKey{path: path, srcDir: srcDir}
+	if val, ok := v.icache[k]; ok {
+		return val.pkg, val.err
+	}
+
+	// cache miss
+	pkg, err := v.ctx.Import(path, srcDir, build.ImportComment)
+	v.icache[k] = icacheVal{pkg: pkg, err: err}
+	return pkg, err
 }
 
 func writeHeaders(file *bzl.File) {
@@ -160,7 +183,7 @@ func (v *Vendorer) walk(root string, f func(path, ipath string, pkg *build.Packa
 		if err != nil {
 			return err
 		}
-		pkg, err := v.ctx.ImportDir(filepath.Join(v.root, path), build.ImportComment)
+		pkg, err := v.importPkg(".", filepath.Join(v.root, path))
 		if err != nil {
 			if _, ok := err.(*build.NoGoError); err != nil && ok {
 				return nil
@@ -183,7 +206,7 @@ func (v *Vendorer) walkRepo() error {
 }
 
 func (v *Vendorer) updateSinglePkg(path string) error {
-	pkg, err := v.ctx.ImportDir("./"+path, build.ImportComment)
+	pkg, err := v.importPkg(".", "./"+path)
 	if err != nil {
 		if _, ok := err.(*build.NoGoError); err != nil && ok {
 			return nil
@@ -308,7 +331,7 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 		apply(
 			merge(deps),
 			filterer(func(s string) bool {
-				pkg, err := v.ctx.Import(s, v.root, build.ImportComment)
+				pkg, err := v.importPkg(s, v.root)
 				if err != nil {
 					if strings.Contains(err.Error(), `cannot find package "C"`) ||
 						// added in go1.7
@@ -511,7 +534,6 @@ func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
 		return true, nil
 	}
 	return true, ioutil.WriteFile(path, out, 0644)
-
 }
 
 func context() *build.Context {

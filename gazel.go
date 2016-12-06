@@ -32,7 +32,7 @@ func main() {
 	if *root == "" {
 		glog.Fatalf("-root argument is required")
 	}
-	v, err := NewVenderor(*root, *cfgPath, *dryRun)
+	v, err := NewVendorer(*root, *cfgPath, *dryRun)
 	if err != nil {
 		glog.Fatalf("unable to build venderor: %v", err)
 	}
@@ -49,7 +49,7 @@ func main() {
 	}
 }
 
-type Venderor struct {
+type Vendorer struct {
 	ctx          *build.Context
 	skippedPaths []*regexp.Regexp
 	dryRun       bool
@@ -57,13 +57,13 @@ type Venderor struct {
 	cfg          *Cfg
 }
 
-func NewVenderor(root, cfgPath string, dryRun bool) (*Venderor, error) {
+func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 	cfg, err := ReadCfg(root, cfgPath)
 	if err != nil {
 		return nil, err
 	}
 
-	v := Venderor{
+	v := Vendorer{
 		ctx:    context(),
 		dryRun: dryRun,
 		root:   root,
@@ -123,7 +123,7 @@ func writeRules(file *bzl.File, rules []*bzl.Rule) {
 	}
 }
 
-func (v *Venderor) resolve(ipath string) Label {
+func (v *Vendorer) resolve(ipath string) Label {
 	if strings.HasPrefix(ipath, v.cfg.GoPrefix) {
 		return Label{
 			pkg: strings.TrimPrefix(ipath, v.cfg.GoPrefix+"/"),
@@ -136,7 +136,7 @@ func (v *Venderor) resolve(ipath string) Label {
 	}
 }
 
-func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Package) error) error {
+func (v *Vendorer) walk(root string, f func(path, ipath string, pkg *build.Package) error) error {
 	skipVendor := true
 	if root == vendorPath {
 		skipVendor = false
@@ -173,7 +173,7 @@ func (v *Venderor) walk(root string, f func(path, ipath string, pkg *build.Packa
 	})
 }
 
-func (v *Venderor) walkRepo() error {
+func (v *Vendorer) walkRepo() error {
 	for _, root := range v.cfg.SrcDirs {
 		if err := v.walk(root, v.updatePkg); err != nil {
 			return err
@@ -182,7 +182,7 @@ func (v *Venderor) walkRepo() error {
 	return nil
 }
 
-func (v *Venderor) updateSinglePkg(path string) error {
+func (v *Vendorer) updateSinglePkg(path string) error {
 	pkg, err := v.ctx.ImportDir("./"+path, build.ImportComment)
 	if err != nil {
 		if _, ok := err.(*build.NoGoError); err != nil && ok {
@@ -194,7 +194,7 @@ func (v *Venderor) updateSinglePkg(path string) error {
 	return v.updatePkg(path, "", pkg)
 }
 
-func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
+func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 	var rules []*bzl.Rule
 
 	var attrs Attrs = make(Attrs)
@@ -241,7 +241,7 @@ func (v *Venderor) updatePkg(path, _ string, pkg *build.Package) error {
 	return nil
 }
 
-func (v *Venderor) walkVendor() error {
+func (v *Vendorer) walkVendor() error {
 	var rules []*bzl.Rule
 	if err := v.walk(vendorPath, func(path, ipath string, pkg *build.Package) error {
 		var attrs Attrs = make(Attrs)
@@ -303,7 +303,7 @@ func (v *Venderor) walkVendor() error {
 	return nil
 }
 
-func (v *Venderor) extractDeps(deps []string) *bzl.ListExpr {
+func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 	return asExpr(
 		apply(
 			merge(deps),

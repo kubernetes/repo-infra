@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/mikedanese/gazel/third_party/go/path/filepath"
+	"go/path/filepath"
 
 	bzl "github.com/bazelbuild/buildifier/core"
 	"github.com/golang/glog"

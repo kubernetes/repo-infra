@@ -22,12 +22,14 @@ import (
 
 const vendorPath = "vendor/"
 
+var (
+	root      = flag.String("root", "", "root of go source")
+	dryRun    = flag.Bool("dry-run", false, "run in dry mode")
+	printDiff = flag.Bool("print-diff", false, "print diff to stdout")
+	cfgPath   = flag.String("cfg-path", ".gazelcfg.json", "path to gazel config (relative paths interpreted relative to -repo.")
+)
+
 func main() {
-	var (
-		root    = flag.String("root", "", "root of go source")
-		dryRun  = flag.Bool("dry-run", false, "run in dry mode")
-		cfgPath = flag.String("cfg-path", ".gazelcfg.json", "path to gazel config (relative paths interpreted relative to -repo.")
-	)
 	flag.Parse()
 	flag.Set("alsologtostderr", "true")
 	if *root == "" {
@@ -613,6 +615,9 @@ func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
 		}
 		if bytes.Compare(out, orig) == 0 {
 			return false, nil
+		}
+		if *printDiff {
+			Diff(out, orig)
 		}
 	}
 	if dryRun {

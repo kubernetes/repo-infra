@@ -23,7 +23,7 @@ import (
 const vendorPath = "vendor/"
 
 var (
-	root      = flag.String("root", "", "root of go source")
+	root      = flag.String("root", ".", "root of go source")
 	dryRun    = flag.Bool("dry-run", false, "run in dry mode")
 	printDiff = flag.Bool("print-diff", false, "print diff to stdout")
 	cfgPath   = flag.String("cfg-path", ".gazelcfg.json", "path to gazel config (relative paths interpreted relative to -repo.")

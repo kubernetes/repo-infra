@@ -292,6 +292,12 @@ func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, n
 	}
 	if pkg.IsCommand() {
 		rules = append(rules, newRule(RuleTypeGoBinary, namer, attrs))
+		if len(pkg.TestGoFiles) != 0 {
+			rules = append(rules, newRule(RuleTypeGoTest, namer, map[string]bzl.Expr{
+				"srcs": asExpr(merge(pkg.TestGoFiles, pkg.GoFiles)).(*bzl.ListExpr),
+				"deps": v.extractDeps(merge(pkg.Imports, pkg.TestImports)),
+			}))
+		}
 	} else {
 		addGoDefaultLibrary := len(cgoSrcs.List) > 0 || len(srcs.List) > 0
 		if len(cgoSrcs.List) != 0 {

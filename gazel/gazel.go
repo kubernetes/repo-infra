@@ -62,7 +62,14 @@ type Vendorer struct {
 }
 
 func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
-	cfg, err := ReadCfg(root, cfgPath)
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return nil, fmt.Errorf("could not get absolute path: %v", err)
+	}
+	if !filepath.IsAbs(cfgPath) {
+		cfgPath = filepath.Join(absRoot, cfgPath)
+	}
+	cfg, err := ReadCfg(cfgPath)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +77,7 @@ func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 	v := Vendorer{
 		ctx:    context(),
 		dryRun: dryRun,
-		root:   root,
+		root:   absRoot,
 		icache: map[icacheKey]icacheVal{},
 		cfg:    cfg,
 	}

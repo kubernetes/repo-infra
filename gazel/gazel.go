@@ -285,18 +285,19 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 }
 
 func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, namer NamerFunc) []*bzl.Rule {
-	var attrs Attrs = make(Attrs)
+	var goLibAttrs Attrs = make(Attrs)
 	var rules []*bzl.Rule
 
 	if len(srcs.List) >= 0 {
-		attrs.Set("srcs", srcs)
+		goLibAttrs.Set("srcs", srcs)
 	} else if len(cgoSrcs.List) == 0 {
 		return nil
 	}
 
 	if len(deps.List) > 0 {
-		attrs.Set("deps", deps)
+		goLibAttrs.SetList("deps", deps)
 	}
+
 	if pkg.IsCommand() {
 		rules = append(rules, newRule(RuleTypeGoBinary, namer, map[string]bzl.Expr{
 			"library": asExpr(":" + namer(RuleTypeGoLibrary)),
@@ -305,33 +306,41 @@ func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, n
 
 	addGoDefaultLibrary := len(cgoSrcs.List) > 0 || len(srcs.List) > 0
 	if len(cgoSrcs.List) != 0 {
-		cgoRule := newRule(RuleTypeCGoGenrule, namer, map[string]bzl.Expr{
-			"srcs":      cgoSrcs,
-			"clinkopts": asExpr([]string{"-lz", "-lm", "-lpthread", "-ldl"}),
-		})
-		rules = append(rules, cgoRule)
-		attrs["library"] = asExpr(":" + namer(RuleTypeCGoGenrule))
+		cgoRuleAttrs := make(Attrs)
+
+		cgoRuleAttrs.SetList("srcs", cgoSrcs)
+		cgoRuleAttrs.SetList("clinkopts", asExpr([]string{"-lz", "-lm", "-lpthread", "-ldl"}).(*bzl.ListExpr))
+
+		rules = append(rules, newRule(RuleTypeCGoGenrule, namer, cgoRuleAttrs))
+
+		goLibAttrs.Set("library", asExpr(":"+namer(RuleTypeCGoGenrule)))
 	}
+
 	if len(pkg.TestGoFiles) != 0 {
-		xtestRule := newRule(RuleTypeGoTest, namer, map[string]bzl.Expr{
-			"srcs": asExpr(pkg.TestGoFiles),
-			"deps": v.extractDeps(pkg.TestImports),
-		})
+		testRuleAttrs := make(Attrs)
+
+		testRuleAttrs.SetList("srcs", asExpr(pkg.TestGoFiles).(*bzl.ListExpr))
+		testRuleAttrs.SetList("deps", v.extractDeps(pkg.TestImports))
+
 		if addGoDefaultLibrary {
-			xtestRule.SetAttr("library", asExpr(":"+namer(RuleTypeGoLibrary)))
+			testRuleAttrs.Set("library", asExpr(":"+namer(RuleTypeGoLibrary)))
 		}
-		rules = append(rules, xtestRule)
+		rules = append(rules, newRule(RuleTypeGoTest, namer, testRuleAttrs))
 	}
+
 	if addGoDefaultLibrary {
-		rules = append(rules, newRule(RuleTypeGoLibrary, namer, attrs))
+		rules = append(rules, newRule(RuleTypeGoLibrary, namer, goLibAttrs))
 	}
 
 	if len(pkg.XTestGoFiles) != 0 {
-		rules = append(rules, newRule(RuleTypeGoXTest, namer, map[string]bzl.Expr{
-			"srcs": asExpr(pkg.XTestGoFiles),
-			"deps": v.extractDeps(pkg.XTestImports),
-		}))
+		xtestRuleAttrs := make(Attrs)
+
+		xtestRuleAttrs.SetList("srcs", asExpr(pkg.XTestGoFiles).(*bzl.ListExpr))
+		xtestRuleAttrs.SetList("deps", v.extractDeps(pkg.XTestImports))
+
+		rules = append(rules, newRule(RuleTypeGoXTest, namer, xtestRuleAttrs))
 	}
+
 	return rules
 }
 
@@ -421,6 +430,13 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 type Attrs map[string]bzl.Expr
 
 func (a Attrs) Set(name string, expr bzl.Expr) {
+	a[name] = expr
+}
+
+func (a Attrs) SetList(name string, expr *bzl.ListExpr) {
+	if len(expr.List) == 0 {
+		return
+	}
 	a[name] = expr
 }
 

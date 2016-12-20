@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
-	"path/filepath"
 )
 
 type Cfg struct {
@@ -14,10 +13,7 @@ type Cfg struct {
 	SkippedPaths []string
 }
 
-func ReadCfg(root, cfgPath string) (*Cfg, error) {
-	if !filepath.IsAbs(cfgPath) {
-		cfgPath = filepath.Join(root, cfgPath)
-	}
+func ReadCfg(cfgPath string) (*Cfg, error) {
 	b, err := ioutil.ReadFile(cfgPath)
 	if err != nil {
 		return nil, err

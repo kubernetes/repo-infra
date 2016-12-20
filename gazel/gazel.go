@@ -298,36 +298,32 @@ func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, n
 		attrs.Set("deps", deps)
 	}
 	if pkg.IsCommand() {
-		rules = append(rules, newRule(RuleTypeGoBinary, namer, attrs))
-		if len(pkg.TestGoFiles) != 0 {
-			rules = append(rules, newRule(RuleTypeGoTest, namer, map[string]bzl.Expr{
-				"srcs": asExpr(merge(pkg.TestGoFiles, pkg.GoFiles)).(*bzl.ListExpr),
-				"deps": v.extractDeps(merge(pkg.Imports, pkg.TestImports)),
-			}))
-		}
-	} else {
-		addGoDefaultLibrary := len(cgoSrcs.List) > 0 || len(srcs.List) > 0
-		if len(cgoSrcs.List) != 0 {
-			cgoRule := newRule(RuleTypeCGoGenrule, namer, map[string]bzl.Expr{
-				"srcs":      cgoSrcs,
-				"clinkopts": asExpr([]string{"-lz", "-lm", "-lpthread", "-ldl"}),
-			})
-			rules = append(rules, cgoRule)
-			attrs["library"] = asExpr(namer(RuleTypeCGoGenrule))
-		}
-		if len(pkg.TestGoFiles) != 0 {
-			xtestRule := newRule(RuleTypeGoTest, namer, map[string]bzl.Expr{
-				"srcs": asExpr(pkg.TestGoFiles),
-				"deps": v.extractDeps(pkg.TestImports),
-			})
-			if addGoDefaultLibrary {
-				xtestRule.SetAttr("library", asExpr(namer(RuleTypeGoLibrary)))
-			}
-			rules = append(rules, xtestRule)
-		}
+		rules = append(rules, newRule(RuleTypeGoBinary, namer, map[string]bzl.Expr{
+			"library": asExpr(":" + namer(RuleTypeGoLibrary)),
+		}))
+	}
+
+	addGoDefaultLibrary := len(cgoSrcs.List) > 0 || len(srcs.List) > 0
+	if len(cgoSrcs.List) != 0 {
+		cgoRule := newRule(RuleTypeCGoGenrule, namer, map[string]bzl.Expr{
+			"srcs":      cgoSrcs,
+			"clinkopts": asExpr([]string{"-lz", "-lm", "-lpthread", "-ldl"}),
+		})
+		rules = append(rules, cgoRule)
+		attrs["library"] = asExpr(":" + namer(RuleTypeCGoGenrule))
+	}
+	if len(pkg.TestGoFiles) != 0 {
+		xtestRule := newRule(RuleTypeGoTest, namer, map[string]bzl.Expr{
+			"srcs": asExpr(pkg.TestGoFiles),
+			"deps": v.extractDeps(pkg.TestImports),
+		})
 		if addGoDefaultLibrary {
-			rules = append(rules, newRule(RuleTypeGoLibrary, namer, attrs))
+			xtestRule.SetAttr("library", asExpr(":"+namer(RuleTypeGoLibrary)))
 		}
+		rules = append(rules, xtestRule)
+	}
+	if addGoDefaultLibrary {
+		rules = append(rules, newRule(RuleTypeGoLibrary, namer, attrs))
 	}
 
 	if len(pkg.XTestGoFiles) != 0 {

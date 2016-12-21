@@ -5,18 +5,6 @@ licenses(["notice"])
 load(
     "@io_bazel_rules_go//go:def.bzl",
     "go_library",
-    "go_test",
-)
-
-go_test(
-    name = "github.com/bazelbuild/buildifier/core_test",
-    srcs = [
-        "parse_test.go",
-        "print_test.go",
-        "quote_test.go",
-    ],
-    library = ":github.com/bazelbuild/buildifier/core",
-    tags = ["automanaged"],
 )
 
 go_library(

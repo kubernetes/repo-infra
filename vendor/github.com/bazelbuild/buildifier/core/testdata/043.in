@@ -1,3 +1,0 @@
-bar = "bar"
-# This gets an empty expr_opt in the parser, causing a nil to appear.
-b = bar[:-2]

@@ -38,7 +38,7 @@ Automanagement:
 
 gazel reconciles rules that have the "automanaged" tag. If
 you no longer want gazel to manage a rule, you can remove the
-automanaged tag and gazel will no longer mangae that rule.
+automanaged tag and gazel will no longer manage that rule.
 
 gazel only manages srcs, deps, and library attributes of a
 rule after initial creation so you can add and managed other

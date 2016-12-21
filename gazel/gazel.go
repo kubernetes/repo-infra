@@ -253,12 +253,16 @@ type NamerFunc func(RuleType) string
 
 func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 
-	srcs := asExpr(merge(pkg.GoFiles, pkg.SFiles)).(*bzl.ListExpr)
-	cgoSrcs := asExpr(merge(pkg.CgoFiles, pkg.CFiles, pkg.CXXFiles, pkg.HFiles)).(*bzl.ListExpr)
+	srcNameMap := func(srcs ...[]string) *bzl.ListExpr {
+		return asExpr(merge(srcs...)).(*bzl.ListExpr)
+	}
 
-	deps := v.extractDeps(pkg.Imports)
+	srcs := srcNameMap(pkg.GoFiles, pkg.SFiles)
+	cgoSrcs := srcNameMap(pkg.CgoFiles, pkg.CFiles, pkg.CXXFiles, pkg.HFiles)
+	testSrcs := srcNameMap(pkg.TestGoFiles)
+	xtestSrcs := srcNameMap(pkg.XTestGoFiles)
 
-	rules := v.emit(srcs, cgoSrcs, deps, pkg, func(rt RuleType) string {
+	rules := v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
 		switch rt {
 		case RuleTypeGoBinary:
 			return filepath.Base(pkg.Dir)
@@ -284,9 +288,11 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 	return nil
 }
 
-func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, namer NamerFunc) []*bzl.Rule {
+func (v *Vendorer) emit(srcs, cgoSrcs, testSrcs, xtestSrcs *bzl.ListExpr, pkg *build.Package, namer NamerFunc) []*bzl.Rule {
 	var goLibAttrs Attrs = make(Attrs)
 	var rules []*bzl.Rule
+
+	deps := v.extractDeps(pkg.Imports)
 
 	if len(srcs.List) >= 0 {
 		goLibAttrs.Set("srcs", srcs)
@@ -316,10 +322,10 @@ func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, n
 		goLibAttrs.Set("library", asExpr(":"+namer(RuleTypeCGoGenrule)))
 	}
 
-	if len(pkg.TestGoFiles) != 0 {
+	if len(testSrcs.List) != 0 {
 		testRuleAttrs := make(Attrs)
 
-		testRuleAttrs.SetList("srcs", asExpr(pkg.TestGoFiles).(*bzl.ListExpr))
+		testRuleAttrs.SetList("srcs", testSrcs)
 		testRuleAttrs.SetList("deps", v.extractDeps(pkg.TestImports))
 
 		if addGoDefaultLibrary {
@@ -332,10 +338,10 @@ func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, n
 		rules = append(rules, newRule(RuleTypeGoLibrary, namer, goLibAttrs))
 	}
 
-	if len(pkg.XTestGoFiles) != 0 {
+	if len(xtestSrcs.List) != 0 {
 		xtestRuleAttrs := make(Attrs)
 
-		xtestRuleAttrs.SetList("srcs", asExpr(pkg.XTestGoFiles).(*bzl.ListExpr))
+		xtestRuleAttrs.SetList("srcs", xtestSrcs)
 		xtestRuleAttrs.SetList("deps", v.extractDeps(pkg.XTestImports))
 
 		rules = append(rules, newRule(RuleTypeGoXTest, namer, xtestRuleAttrs))
@@ -347,29 +353,25 @@ func (v *Vendorer) emit(srcs, cgoSrcs, deps *bzl.ListExpr, pkg *build.Package, n
 func (v *Vendorer) walkVendor() error {
 	var rules []*bzl.Rule
 	if err := v.walk(vendorPath, func(path, ipath string, pkg *build.Package) error {
-		srcs := asExpr(
-			apply(
-				merge(pkg.GoFiles, pkg.SFiles),
-				mapper(func(s string) string {
-					return strings.TrimPrefix(filepath.Join(path, s), "vendor/")
-				}),
-			),
-		).(*bzl.ListExpr)
+		srcNameMap := func(srcs ...[]string) *bzl.ListExpr {
+			return asExpr(
+				apply(
+					merge(srcs...),
+					mapper(func(s string) string {
+						return strings.TrimPrefix(filepath.Join(path, s), "vendor/")
+					}),
+				),
+			).(*bzl.ListExpr)
+		}
 
-		cgoSrcs := asExpr(
-			apply(
-				merge(pkg.CgoFiles, pkg.CFiles, pkg.CXXFiles, pkg.HFiles),
-				mapper(func(s string) string {
-					return strings.TrimPrefix(filepath.Join(path, s), "vendor/")
-				}),
-			),
-		).(*bzl.ListExpr)
-
-		deps := v.extractDeps(pkg.Imports)
+		srcs := srcNameMap(pkg.GoFiles, pkg.SFiles)
+		cgoSrcs := srcNameMap(pkg.CgoFiles, pkg.CFiles, pkg.CXXFiles, pkg.HFiles)
+		testSrcs := srcNameMap(pkg.TestGoFiles)
+		xtestSrcs := srcNameMap(pkg.XTestGoFiles)
 
 		tagBase := v.resolve(ipath).tag
 
-		rules = append(rules, v.emit(srcs, cgoSrcs, deps, pkg, func(rt RuleType) string {
+		rules = append(rules, v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
 			switch rt {
 			case RuleTypeGoBinary:
 				return tagBase + "_bin"

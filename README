@@ -44,3 +44,10 @@ gazel only manages srcs, deps, and library attributes of a
 rule after initial creation so you can add and managed other
 attributes like data and copts and gazel will respect your
 changes.
+
+Getting latest stable version:
+
+The latest tagged release of gazel is v7. To get the latest
+stable version of gazel run:
+
+$ go get -u gopkg.in/mikedanese/gazel.v7/gazel

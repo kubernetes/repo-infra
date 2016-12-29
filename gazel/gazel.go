@@ -43,18 +43,11 @@ func main() {
 		glog.Fatalf("unable to build vendorer: %v", err)
 	}
 
-	if len(flag.Args()) == 1 {
-		pkg := flag.Args()[0]
-		if err := v.updateSinglePkg(pkg); err != nil {
-			glog.Fatalf("err updating %s: %v", pkg, err)
-		}
-	} else {
-		if err := v.walkVendor(); err != nil {
-			glog.Fatalf("err walking vendor: %v", err)
-		}
-		if err := v.walkRepo(); err != nil {
-			glog.Fatalf("err walking repo: %v", err)
-		}
+	if err := v.walkVendor(); err != nil {
+		glog.Fatalf("err walking vendor: %v", err)
+	}
+	if err := v.walkRepo(); err != nil {
+		glog.Fatalf("err walking repo: %v", err)
 	}
 	if err := v.reconcileAllRules(); err != nil {
 		glog.Fatalf("err reconciling rules: %v", err)
@@ -434,8 +427,13 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 }
 
 func (v *Vendorer) reconcileAllRules() error {
-	for path, rules := range v.newRules {
-		err := ReconcileRules(path, rules, v.dryRun)
+	var paths []string
+	for path, _ := range v.newRules {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	for _, path := range paths {
+		err := ReconcileRules(path, v.newRules[path], v.dryRun)
 		if err != nil {
 			return err
 		}

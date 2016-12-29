@@ -37,11 +37,14 @@ func main() {
 	}
 	v, err := NewVendorer(*root, *cfgPath, *dryRun)
 	if err != nil {
-		glog.Fatalf("unable to build venderor: %v", err)
+		glog.Fatalf("unable to build vendorer: %v", err)
 	}
 
 	if len(flag.Args()) == 1 {
-		v.updateSinglePkg(flag.Args()[0])
+		pkg := flag.Args()[0]
+		if err := v.updateSinglePkg(pkg); err != nil {
+			glog.Fatalf("err updating %s: %v", pkg, err)
+		}
 	} else {
 		if err := v.walkVendor(); err != nil {
 			glog.Fatalf("err walking vendor: %v", err)
@@ -49,6 +52,9 @@ func main() {
 		if err := v.walkRepo(); err != nil {
 			glog.Fatalf("err walking repo: %v", err)
 		}
+	}
+	if err := v.reconcileAllRules(); err != nil {
+		glog.Fatalf("err reconciling rules: %v", err)
 	}
 }
 
@@ -59,6 +65,7 @@ type Vendorer struct {
 	dryRun       bool
 	root         string
 	cfg          *Cfg
+	newRules     map[string][]*bzl.Rule // package path -> list of rules to add or update
 }
 
 func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
@@ -75,11 +82,12 @@ func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 	}
 
 	v := Vendorer{
-		ctx:    context(),
-		dryRun: dryRun,
-		root:   absRoot,
-		icache: map[icacheKey]icacheVal{},
-		cfg:    cfg,
+		ctx:      context(),
+		dryRun:   dryRun,
+		root:     absRoot,
+		icache:   map[icacheKey]icacheVal{},
+		cfg:      cfg,
+		newRules: make(map[string][]*bzl.Rule),
 	}
 
 	for _, sp := range cfg.SkippedPaths {
@@ -262,7 +270,7 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 	testSrcs := srcNameMap(pkg.TestGoFiles)
 	xtestSrcs := srcNameMap(pkg.XTestGoFiles)
 
-	rules := v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
+	v.newRules[path] = append(v.newRules[path], v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
 		switch rt {
 		case RuleTypeGoBinary:
 			return filepath.Base(pkg.Dir)
@@ -276,15 +284,8 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 			return "cgo_codegen"
 		}
 		panic("unreachable")
-	})
+	})...)
 
-	wrote, err := ReconcileRules(filepath.Join(path, "BUILD"), rules, v.dryRun)
-	if err != nil {
-		return err
-	}
-	if wrote {
-		fmt.Fprintf(os.Stderr, "wrote BUILD for %q\n", pkg.Dir)
-	}
 	return nil
 }
 
@@ -391,13 +392,8 @@ func (v *Vendorer) walkVendor() error {
 	}); err != nil {
 		return err
 	}
-	wrote, err := ReconcileRules("./vendor/BUILD", rules, v.dryRun)
-	if err != nil {
-		return err
-	}
-	if wrote {
-		fmt.Fprintf(os.Stderr, "wrote BUILD for ./vendor/\n")
-	}
+	v.newRules[vendorPath] = append(v.newRules[vendorPath], rules...)
+
 	return nil
 }
 
@@ -427,6 +423,16 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 			}),
 		),
 	).(*bzl.ListExpr)
+}
+
+func (v *Vendorer) reconcileAllRules() error {
+	for path, rules := range v.newRules {
+		err := ReconcileRules(path, rules, v.dryRun)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type Attrs map[string]bzl.Expr
@@ -533,7 +539,22 @@ func newRule(rt RuleType, namer NamerFunc, attrs map[string]bzl.Expr) *bzl.Rule 
 	return rule
 }
 
-func ReconcileRules(path string, rules []*bzl.Rule, dryRun bool) (bool, error) {
+// buildName determines the name of a preexisting BUILD file, returning
+// a default if no such file exists.
+func buildName(pkgPath string) string {
+	options := []string{"BUILD", "BUILD.bazel"}
+	for _, b := range options {
+		path := filepath.Join(pkgPath, b)
+		info, err := os.Stat(path)
+		if err == nil && !info.IsDir() {
+			return path
+		}
+	}
+	return filepath.Join(pkgPath, options[0])
+}
+
+func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) error {
+	path := buildName(pkgPath)
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
 		f := &bzl.File{}
@@ -542,18 +563,18 @@ func ReconcileRules(path string, rules []*bzl.Rule, dryRun bool) (bool, error) {
 		writeRules(f, rules)
 		return writeFile(path, f, false, dryRun)
 	} else if err != nil {
-		return false, err
+		return err
 	}
 	if info.IsDir() {
-		return false, fmt.Errorf("%q cannot be a directory", path)
+		return fmt.Errorf("%q cannot be a directory", path)
 	}
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return false, err
+		return err
 	}
 	f, err := bzl.Parse(path, b)
 	if err != nil {
-		return false, err
+		return err
 	}
 	oldRules := make(map[string]*bzl.Rule)
 	for _, r := range f.Rules("") {
@@ -631,26 +652,31 @@ func RuleIsManaged(r *bzl.Rule) bool {
 	return automanaged
 }
 
-func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
+func writeFile(path string, f *bzl.File, exists, dryRun bool) error {
 	var info bzl.RewriteInfo
 	bzl.Rewrite(f, &info)
 	out := bzl.Format(f)
 	if exists {
 		orig, err := ioutil.ReadFile(path)
 		if err != nil {
-			return false, err
+			return err
 		}
 		if bytes.Compare(out, orig) == 0 {
-			return false, nil
+			return nil
 		}
 		if *printDiff {
 			Diff(out, orig)
 		}
 	}
 	if dryRun {
-		return true, nil
+		fmt.Fprintf(os.Stderr, "DRY-RUN: wrote %q\n", path)
+		return nil
 	}
-	return true, ioutil.WriteFile(path, out, 0644)
+	werr := ioutil.WriteFile(path, out, 0644)
+	if werr == nil {
+		fmt.Fprintf(os.Stderr, "wrote %q\n", path)
+	}
+	return werr
 }
 
 func context() *build.Context {

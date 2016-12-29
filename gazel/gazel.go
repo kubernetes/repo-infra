@@ -20,7 +20,10 @@ import (
 	"github.com/golang/glog"
 )
 
-const vendorPath = "vendor/"
+const (
+	vendorPath     = "vendor/"
+	automanagedTag = "automanaged"
+)
 
 var (
 	root      = flag.String("root", ".", "root of go source")
@@ -270,7 +273,7 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 	testSrcs := srcNameMap(pkg.TestGoFiles)
 	xtestSrcs := srcNameMap(pkg.XTestGoFiles)
 
-	v.newRules[path] = append(v.newRules[path], v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
+	v.addRules(path, v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
 		switch rt {
 		case RuleTypeGoBinary:
 			return filepath.Base(pkg.Dir)
@@ -284,7 +287,7 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 			return "cgo_codegen"
 		}
 		panic("unreachable")
-	})...)
+	}))
 
 	return nil
 }
@@ -351,6 +354,11 @@ func (v *Vendorer) emit(srcs, cgoSrcs, testSrcs, xtestSrcs *bzl.ListExpr, pkg *b
 	return rules
 }
 
+func (v *Vendorer) addRules(pkgPath string, rules []*bzl.Rule) {
+	cleanPath := filepath.Clean(pkgPath)
+	v.newRules[cleanPath] = append(v.newRules[cleanPath], rules...)
+}
+
 func (v *Vendorer) walkVendor() error {
 	var rules []*bzl.Rule
 	if err := v.walk(vendorPath, func(path, ipath string, pkg *build.Package) error {
@@ -392,7 +400,7 @@ func (v *Vendorer) walkVendor() error {
 	}); err != nil {
 		return err
 	}
-	v.newRules[vendorPath] = append(v.newRules[vendorPath], rules...)
+	v.addRules(vendorPath, rules)
 
 	return nil
 }
@@ -535,26 +543,26 @@ func newRule(rt RuleType, namer NamerFunc, attrs map[string]bzl.Expr) *bzl.Rule 
 	for k, v := range attrs {
 		rule.SetAttr(k, v)
 	}
-	rule.SetAttr("tags", asExpr([]string{"automanaged"}))
+	rule.SetAttr("tags", asExpr([]string{automanagedTag}))
 	return rule
 }
 
-// buildName determines the name of a preexisting BUILD file, returning
+// findBuildFile determines the name of a preexisting BUILD file, returning
 // a default if no such file exists.
-func buildName(pkgPath string) string {
+func findBuildFile(pkgPath string) (bool, string) {
 	options := []string{"BUILD", "BUILD.bazel"}
 	for _, b := range options {
 		path := filepath.Join(pkgPath, b)
 		info, err := os.Stat(path)
 		if err == nil && !info.IsDir() {
-			return path
+			return true, path
 		}
 	}
-	return filepath.Join(pkgPath, options[0])
+	return false, filepath.Join(pkgPath, options[0])
 }
 
 func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) error {
-	path := buildName(pkgPath)
+	_, path := findBuildFile(pkgPath)
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
 		f := &bzl.File{}
@@ -644,7 +652,7 @@ func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 func RuleIsManaged(r *bzl.Rule) bool {
 	var automanaged bool
 	for _, tag := range r.AttrStrings("tags") {
-		if tag == "automanaged" {
+		if tag == automanagedTag {
 			automanaged = true
 			break
 		}

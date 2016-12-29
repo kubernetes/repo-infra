@@ -49,7 +49,7 @@ func main() {
 	if err := v.walkRepo(); err != nil {
 		glog.Fatalf("err walking repo: %v", err)
 	}
-	if err := v.reconcileAllRules(); err != nil {
+	if _, err := v.reconcileAllRules(); err != nil {
 		glog.Fatalf("err reconciling rules: %v", err)
 	}
 }
@@ -426,19 +426,21 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 	).(*bzl.ListExpr)
 }
 
-func (v *Vendorer) reconcileAllRules() error {
+func (v *Vendorer) reconcileAllRules() (bool, error) {
 	var paths []string
 	for path, _ := range v.newRules {
 		paths = append(paths, path)
 	}
 	sort.Strings(paths)
+	wroteFiles := false
 	for _, path := range paths {
-		err := ReconcileRules(path, v.newRules[path], v.dryRun)
+		w, err := ReconcileRules(path, v.newRules[path], v.dryRun)
+		wroteFiles = wroteFiles || w
 		if err != nil {
-			return err
+			return wroteFiles, err
 		}
 	}
-	return nil
+	return wroteFiles, nil
 }
 
 type Attrs map[string]bzl.Expr
@@ -559,7 +561,7 @@ func findBuildFile(pkgPath string) (bool, string) {
 	return false, filepath.Join(pkgPath, options[0])
 }
 
-func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) error {
+func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) (bool, error) {
 	_, path := findBuildFile(pkgPath)
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
@@ -569,18 +571,18 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) error {
 		writeRules(f, rules)
 		return writeFile(path, f, false, dryRun)
 	} else if err != nil {
-		return err
+		return false, err
 	}
 	if info.IsDir() {
-		return fmt.Errorf("%q cannot be a directory", path)
+		return false, fmt.Errorf("%q cannot be a directory", path)
 	}
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return false, err
 	}
 	f, err := bzl.Parse(path, b)
 	if err != nil {
-		return err
+		return false, err
 	}
 	oldRules := make(map[string]*bzl.Rule)
 	for _, r := range f.Rules("") {
@@ -658,17 +660,17 @@ func RuleIsManaged(r *bzl.Rule) bool {
 	return automanaged
 }
 
-func writeFile(path string, f *bzl.File, exists, dryRun bool) error {
+func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
 	var info bzl.RewriteInfo
 	bzl.Rewrite(f, &info)
 	out := bzl.Format(f)
 	if exists {
 		orig, err := ioutil.ReadFile(path)
 		if err != nil {
-			return err
+			return false, err
 		}
 		if bytes.Compare(out, orig) == 0 {
-			return nil
+			return false, nil
 		}
 		if *printDiff {
 			Diff(out, orig)
@@ -676,13 +678,13 @@ func writeFile(path string, f *bzl.File, exists, dryRun bool) error {
 	}
 	if dryRun {
 		fmt.Fprintf(os.Stderr, "DRY-RUN: wrote %q\n", path)
-		return nil
+		return true, nil
 	}
 	werr := ioutil.WriteFile(path, out, 0644)
 	if werr == nil {
 		fmt.Fprintf(os.Stderr, "wrote %q\n", path)
 	}
-	return werr
+	return werr == nil, werr
 }
 
 func context() *build.Context {

@@ -20,12 +20,16 @@ import (
 	"github.com/golang/glog"
 )
 
-const vendorPath = "vendor/"
+const (
+	vendorPath     = "vendor/"
+	automanagedTag = "automanaged"
+)
 
 var (
 	root      = flag.String("root", ".", "root of go source")
 	dryRun    = flag.Bool("dry-run", false, "run in dry mode")
 	printDiff = flag.Bool("print-diff", false, "print diff to stdout")
+	validate  = flag.Bool("validate", false, "run in dry mode and exit nonzero if any BUILD files need to be updated")
 	cfgPath   = flag.String("cfg-path", ".gazelcfg.json", "path to gazel config (relative paths interpreted relative to -repo.")
 )
 
@@ -35,20 +39,27 @@ func main() {
 	if *root == "" {
 		glog.Fatalf("-root argument is required")
 	}
+	if *validate {
+		*dryRun = true
+	}
 	v, err := NewVendorer(*root, *cfgPath, *dryRun)
 	if err != nil {
-		glog.Fatalf("unable to build venderor: %v", err)
+		glog.Fatalf("unable to build vendorer: %v", err)
 	}
 
-	if len(flag.Args()) == 1 {
-		v.updateSinglePkg(flag.Args()[0])
-	} else {
-		if err := v.walkVendor(); err != nil {
-			glog.Fatalf("err walking vendor: %v", err)
-		}
-		if err := v.walkRepo(); err != nil {
-			glog.Fatalf("err walking repo: %v", err)
-		}
+	if err := v.walkVendor(); err != nil {
+		glog.Fatalf("err walking vendor: %v", err)
+	}
+	if err := v.walkRepo(); err != nil {
+		glog.Fatalf("err walking repo: %v", err)
+	}
+	written := 0
+	if written, err = v.reconcileAllRules(); err != nil {
+		glog.Fatalf("err reconciling rules: %v", err)
+	}
+	if *validate && written > 0 {
+		fmt.Fprintf(os.Stderr, "\n%d BUILD files not up-to-date.\n", written)
+		os.Exit(1)
 	}
 }
 
@@ -59,6 +70,7 @@ type Vendorer struct {
 	dryRun       bool
 	root         string
 	cfg          *Cfg
+	newRules     map[string][]*bzl.Rule // package path -> list of rules to add or update
 }
 
 func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
@@ -75,11 +87,12 @@ func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 	}
 
 	v := Vendorer{
-		ctx:    context(),
-		dryRun: dryRun,
-		root:   absRoot,
-		icache: map[icacheKey]icacheVal{},
-		cfg:    cfg,
+		ctx:      context(),
+		dryRun:   dryRun,
+		root:     absRoot,
+		icache:   map[icacheKey]icacheVal{},
+		cfg:      cfg,
+		newRules: make(map[string][]*bzl.Rule),
 	}
 
 	for _, sp := range cfg.SkippedPaths {
@@ -262,7 +275,7 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 	testSrcs := srcNameMap(pkg.TestGoFiles)
 	xtestSrcs := srcNameMap(pkg.XTestGoFiles)
 
-	rules := v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
+	v.addRules(path, v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
 		switch rt {
 		case RuleTypeGoBinary:
 			return filepath.Base(pkg.Dir)
@@ -276,15 +289,8 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 			return "cgo_codegen"
 		}
 		panic("unreachable")
-	})
+	}))
 
-	wrote, err := ReconcileRules(filepath.Join(path, "BUILD"), rules, v.dryRun)
-	if err != nil {
-		return err
-	}
-	if wrote {
-		fmt.Fprintf(os.Stderr, "wrote BUILD for %q\n", pkg.Dir)
-	}
 	return nil
 }
 
@@ -350,6 +356,11 @@ func (v *Vendorer) emit(srcs, cgoSrcs, testSrcs, xtestSrcs *bzl.ListExpr, pkg *b
 	return rules
 }
 
+func (v *Vendorer) addRules(pkgPath string, rules []*bzl.Rule) {
+	cleanPath := filepath.Clean(pkgPath)
+	v.newRules[cleanPath] = append(v.newRules[cleanPath], rules...)
+}
+
 func (v *Vendorer) walkVendor() error {
 	var rules []*bzl.Rule
 	if err := v.walk(vendorPath, func(path, ipath string, pkg *build.Package) error {
@@ -391,13 +402,8 @@ func (v *Vendorer) walkVendor() error {
 	}); err != nil {
 		return err
 	}
-	wrote, err := ReconcileRules("./vendor/BUILD", rules, v.dryRun)
-	if err != nil {
-		return err
-	}
-	if wrote {
-		fmt.Fprintf(os.Stderr, "wrote BUILD for ./vendor/\n")
-	}
+	v.addRules(vendorPath, rules)
+
 	return nil
 }
 
@@ -427,6 +433,25 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 			}),
 		),
 	).(*bzl.ListExpr)
+}
+
+func (v *Vendorer) reconcileAllRules() (int, error) {
+	var paths []string
+	for path, _ := range v.newRules {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	written := 0
+	for _, path := range paths {
+		w, err := ReconcileRules(path, v.newRules[path], v.dryRun)
+		if w {
+			written++
+		}
+		if err != nil {
+			return written, err
+		}
+	}
+	return written, nil
 }
 
 type Attrs map[string]bzl.Expr
@@ -529,11 +554,26 @@ func newRule(rt RuleType, namer NamerFunc, attrs map[string]bzl.Expr) *bzl.Rule 
 	for k, v := range attrs {
 		rule.SetAttr(k, v)
 	}
-	rule.SetAttr("tags", asExpr([]string{"automanaged"}))
+	rule.SetAttr("tags", asExpr([]string{automanagedTag}))
 	return rule
 }
 
-func ReconcileRules(path string, rules []*bzl.Rule, dryRun bool) (bool, error) {
+// findBuildFile determines the name of a preexisting BUILD file, returning
+// a default if no such file exists.
+func findBuildFile(pkgPath string) (bool, string) {
+	options := []string{"BUILD", "BUILD.bazel"}
+	for _, b := range options {
+		path := filepath.Join(pkgPath, b)
+		info, err := os.Stat(path)
+		if err == nil && !info.IsDir() {
+			return true, path
+		}
+	}
+	return false, filepath.Join(pkgPath, options[0])
+}
+
+func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) (bool, error) {
+	_, path := findBuildFile(pkgPath)
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
 		f := &bzl.File{}
@@ -623,7 +663,7 @@ func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 func RuleIsManaged(r *bzl.Rule) bool {
 	var automanaged bool
 	for _, tag := range r.AttrStrings("tags") {
-		if tag == "automanaged" {
+		if tag == automanagedTag {
 			automanaged = true
 			break
 		}
@@ -640,17 +680,22 @@ func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if bytes.Compare(out, orig) == 0 {
+		if bytes.Compare(orig, out) == 0 {
 			return false, nil
 		}
 		if *printDiff {
-			Diff(out, orig)
+			Diff(orig, out)
 		}
 	}
 	if dryRun {
+		fmt.Fprintf(os.Stderr, "DRY-RUN: wrote %q\n", path)
 		return true, nil
 	}
-	return true, ioutil.WriteFile(path, out, 0644)
+	werr := ioutil.WriteFile(path, out, 0644)
+	if werr == nil {
+		fmt.Fprintf(os.Stderr, "wrote %q\n", path)
+	}
+	return werr == nil, werr
 }
 
 func context() *build.Context {

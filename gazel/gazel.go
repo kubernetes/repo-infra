@@ -57,12 +57,9 @@ func main() {
 	if written, err = v.reconcileAllRules(); err != nil {
 		glog.Fatalf("err reconciling rules: %v", err)
 	}
-	if *validate {
-		if written > 0 {
-			fmt.Fprintf(os.Stderr, "\n%d BUILD files not up-to-date.\n", written)
-			os.Exit(1)
-		}
-		fmt.Fprintf(os.Stderr, "All BUILD files up-to-date.\n")
+	if *validate && written > 0 {
+		fmt.Fprintf(os.Stderr, "\n%d BUILD files not up-to-date.\n", written)
+		os.Exit(1)
 	}
 }
 

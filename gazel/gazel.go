@@ -29,6 +29,7 @@ var (
 	root      = flag.String("root", ".", "root of go source")
 	dryRun    = flag.Bool("dry-run", false, "run in dry mode")
 	printDiff = flag.Bool("print-diff", false, "print diff to stdout")
+	validate  = flag.Bool("validate", false, "run in dry mode and exit nonzero if any BUILD files need to be updated")
 	cfgPath   = flag.String("cfg-path", ".gazelcfg.json", "path to gazel config (relative paths interpreted relative to -repo.")
 )
 
@@ -37,6 +38,9 @@ func main() {
 	flag.Set("alsologtostderr", "true")
 	if *root == "" {
 		glog.Fatalf("-root argument is required")
+	}
+	if *validate {
+		*dryRun = true
 	}
 	v, err := NewVendorer(*root, *cfgPath, *dryRun)
 	if err != nil {
@@ -49,8 +53,16 @@ func main() {
 	if err := v.walkRepo(); err != nil {
 		glog.Fatalf("err walking repo: %v", err)
 	}
-	if _, err := v.reconcileAllRules(); err != nil {
+	written := 0
+	if written, err = v.reconcileAllRules(); err != nil {
 		glog.Fatalf("err reconciling rules: %v", err)
+	}
+	if *validate {
+		if written > 0 {
+			fmt.Fprintf(os.Stderr, "\n%d BUILD files not up-to-date.\n", written)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "All BUILD files up-to-date.\n")
 	}
 }
 
@@ -426,21 +438,23 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 	).(*bzl.ListExpr)
 }
 
-func (v *Vendorer) reconcileAllRules() (bool, error) {
+func (v *Vendorer) reconcileAllRules() (int, error) {
 	var paths []string
 	for path, _ := range v.newRules {
 		paths = append(paths, path)
 	}
 	sort.Strings(paths)
-	wroteFiles := false
+	written := 0
 	for _, path := range paths {
 		w, err := ReconcileRules(path, v.newRules[path], v.dryRun)
-		wroteFiles = wroteFiles || w
+		if w {
+			written++
+		}
 		if err != nil {
-			return wroteFiles, err
+			return written, err
 		}
 	}
-	return wroteFiles, nil
+	return written, nil
 }
 
 type Attrs map[string]bzl.Expr

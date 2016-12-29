@@ -51,3 +51,9 @@ The latest tagged release of gazel is v7. To get the latest
 stable version of gazel run:
 
 $ go get -u gopkg.in/mikedanese/gazel.v7/gazel
+
+Validating BUILD files in CI:
+
+If you run gazel with --validate, it will not update any BUILD files, but it
+will exit nonzero if any BUILD files are out-of-date. You can add --print-diff
+to print out the changes needed.

@@ -680,11 +680,11 @@ func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		if bytes.Compare(out, orig) == 0 {
+		if bytes.Compare(orig, out) == 0 {
 			return false, nil
 		}
 		if *printDiff {
-			Diff(out, orig)
+			Diff(orig, out)
 		}
 	}
 	if dryRun {

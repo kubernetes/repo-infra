@@ -62,7 +62,7 @@ The "all-srcs" rule includes both the "package-srcs" rule and
 the "all-srcs" rules of all subpackages; i.e. //:all-srcs will
 include all files in your repository.
 
-The "package-srcs" rule defauls to private visibility,
+The "package-srcs" rule defaults to private visibility,
 since it is safer to depend on the "all-srcs" rule: if a
 subpackage is added, the "package-srcs" rule will no longer
 include those files.

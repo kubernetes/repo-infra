@@ -641,6 +641,7 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) (bool, error
 func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 	usedRuleKindsMap := map[string]bool{}
 	for _, r := range rules {
+		// Select only the Go rules we need to import, excluding builtins like filegroup.
 		// TODO: make less fragile
 		if strings.HasPrefix(r.Kind(), "go_") || strings.HasPrefix(r.Kind(), "cgo_") {
 			usedRuleKindsMap[r.Kind()] = true

@@ -11,23 +11,27 @@ This repository contains repository infrastructure tools for use in
 
 ## Using this repository
 
-The `repo-infra` repository is designed to be used via
-[git subtree](http://git.kernel.org/cgit/git/git.git/plain/contrib/subtree/git-subtree.txt)
-and placed in the top level of your project.
+This repository can be used via some golang "vendoring" mechanism 
+(such as glide), or it can be used via
+[git subtree](http://git.kernel.org/cgit/git/git.git/plain/contrib/subtree/git-subtree.txt).
 
-`repo-infra expects to be placed into the top level of your project under repo-
-`infra:
+### Using "vendoring"
 
-```
-repository-root/  # eg, service-catalog
-  repo-infra/
-    ...
-```
+The exact mechanism to pull in this repository will vary depending on
+the tool you use. However, unless you end up having this repository
+at the root of your project's repository you wll probably need to 
+make sure you use the `--rootdir` command line parameter to let the
+`verify-boilerplate.sh` know its location, eg:
 
-### Adding a `repo-infra` subtree
+    verify-boilerplate.sh --rootdir=/home/myrepo
 
-To add `repo-infra` to your repository, use the following commands from the root
-directory of **your** repository.
+### Using `git subtree`
+
+When using the git subtree mechanism, this repository should be placed in the 
+top level of your project.
+
+To add `repo-infra` to your repository, use the following commands from the 
+root directory of **your** repository.
 
 First, add a git remote for the `repo-infra` repository:
 

@@ -169,7 +169,11 @@ func writeRules(file *bzl.File, rules []*bzl.Rule) {
 }
 
 func (v *Vendorer) resolve(ipath string) Label {
-	if strings.HasPrefix(ipath, v.cfg.GoPrefix) {
+	if ipath == v.cfg.GoPrefix {
+		return Label{
+			tag: "go_default_library",
+		}
+	} else if strings.HasPrefix(ipath, v.cfg.GoPrefix) {
 		return Label{
 			pkg: strings.TrimPrefix(ipath, v.cfg.GoPrefix+"/"),
 			tag: "go_default_library",

@@ -74,10 +74,10 @@ automanaged.
 
 Getting latest stable version:
 
-The latest tagged release of gazel is v10. To get the latest
+The latest tagged release of gazel is v11. To get the latest
 stable version of gazel run:
 
-$ go get -u gopkg.in/mikedanese/gazel.v10/gazel
+$ go get -u gopkg.in/mikedanese/gazel.v11/gazel
 
 Validating BUILD files in CI:
 

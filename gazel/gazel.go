@@ -53,6 +53,9 @@ func main() {
 	if err := v.walkRepo(); err != nil {
 		glog.Fatalf("err walking repo: %v", err)
 	}
+	if _, err := v.walkSource(*root); err != nil {
+		glog.Fatalf("err walking source: %v", err)
+	}
 	written := 0
 	if written, err = v.reconcileAllRules(); err != nil {
 		glog.Fatalf("err reconciling rules: %v", err)
@@ -244,6 +247,7 @@ const (
 	RuleTypeGoTest
 	RuleTypeGoXTest
 	RuleTypeCGoGenrule
+	RuleTypeFileGroup
 )
 
 func (rt RuleType) RuleKind() string {
@@ -258,6 +262,8 @@ func (rt RuleType) RuleKind() string {
 		return "go_test"
 	case RuleTypeCGoGenrule:
 		return "cgo_genrule"
+	case RuleTypeFileGroup:
+		return "filegroup"
 	}
 	panic("unreachable")
 }
@@ -621,21 +627,25 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) (bool, error
 		delete(oldRules, r.Name())
 	}
 
-	reconcileLoad(f, rules)
-
 	for _, r := range oldRules {
 		if !RuleIsManaged(r) {
 			continue
 		}
 		f.DelRules(r.Kind(), r.Name())
 	}
+	reconcileLoad(f, f.Rules(""))
+
 	return writeFile(path, f, true, dryRun)
 }
 
 func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 	usedRuleKindsMap := map[string]bool{}
 	for _, r := range rules {
-		usedRuleKindsMap[r.Kind()] = true
+		// Select only the Go rules we need to import, excluding builtins like filegroup.
+		// TODO: make less fragile
+		if strings.HasPrefix(r.Kind(), "go_") || strings.HasPrefix(r.Kind(), "cgo_") {
+			usedRuleKindsMap[r.Kind()] = true
+		}
 	}
 
 	usedRuleKindsList := []string{}

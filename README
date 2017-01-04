@@ -45,6 +45,33 @@ rule after initial creation so you can add and managed other
 attributes like data and copts and gazel will respect your
 changes.
 
+gazel automatically formats all BUILD files in your repository
+except for those matching SkippedPaths.
+
+Adding "sources" rules:
+
+If you set "AddSourcesRules": true in your .gazelcfg.json,
+gazel will create "package-srcs" and "all-srcs" rules in every
+package.
+
+The "package-srcs" rule is a glob matching all files in the
+package recursively, but not any files owned by packages in
+subdirectories.
+
+The "all-srcs" rule includes both the "package-srcs" rule and
+the "all-srcs" rules of all subpackages; i.e. //:all-srcs will
+include all files in your repository.
+
+The "package-srcs" rule defaults to private visibility,
+since it is safer to depend on the "all-srcs" rule: if a
+subpackage is added, the "package-srcs" rule will no longer
+include those files.
+
+You can remove the "automanaged" tag from the "package-srcs"
+rule if you need to modify the glob (such as adding excludes).
+It's recommended that you leave the "all-srcs" rule
+automanaged.
+
 Getting latest stable version:
 
 The latest tagged release of gazel is v7. To get the latest

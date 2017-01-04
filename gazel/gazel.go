@@ -46,6 +46,9 @@ func main() {
 	if err != nil {
 		glog.Fatalf("unable to build vendorer: %v", err)
 	}
+	if err := os.Chdir(v.root); err != nil {
+		glog.Fatalf("cannot chdir into root %q: %v", v.root, err)
+	}
 
 	if err := v.walkVendor(); err != nil {
 		glog.Fatalf("err walking vendor: %v", err)
@@ -53,7 +56,7 @@ func main() {
 	if err := v.walkRepo(); err != nil {
 		glog.Fatalf("err walking repo: %v", err)
 	}
-	if _, err := v.walkSource(*root); err != nil {
+	if _, err := v.walkSource("."); err != nil {
 		glog.Fatalf("err walking source: %v", err)
 	}
 	written := 0

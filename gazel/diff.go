@@ -12,14 +12,14 @@ func Diff(left, right []byte) error {
 		return err
 	}
 	defer lf.Close()
-	//defer os.Remove(lf.Name())
+	defer os.Remove(lf.Name())
 
 	rf, err := ioutil.TempFile("/tmp", "gazel-diff")
 	if err != nil {
 		return err
 	}
 	defer rf.Close()
-	//defer os.Remove(rf.Name())
+	defer os.Remove(rf.Name())
 
 	_, err = lf.Write(left)
 	if err != nil {

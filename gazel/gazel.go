@@ -574,7 +574,7 @@ func newRule(rt RuleType, namer NamerFunc, attrs map[string]bzl.Expr) *bzl.Rule 
 // findBuildFile determines the name of a preexisting BUILD file, returning
 // a default if no such file exists.
 func findBuildFile(pkgPath string) (bool, string) {
-	options := []string{"BUILD", "BUILD.bazel"}
+	options := []string{"BUILD.bazel", "BUILD"}
 	for _, b := range options {
 		path := filepath.Join(pkgPath, b)
 		info, err := os.Stat(path)
@@ -582,7 +582,7 @@ func findBuildFile(pkgPath string) (bool, string) {
 			return true, path
 		}
 	}
-	return false, filepath.Join(pkgPath, options[0])
+	return false, filepath.Join(pkgPath, "BUILD")
 }
 
 func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) (bool, error) {

@@ -182,9 +182,16 @@ func (v *Vendorer) resolve(ipath string) Label {
 			tag: "go_default_library",
 		}
 	}
-	return Label{
-		pkg: "vendor",
-		tag: ipath,
+	if v.cfg.VendorMultipleBuildFiles {
+		return Label{
+			pkg: "vendor/" + ipath,
+			tag: "go_default_library",
+		}
+	} else {
+		return Label{
+			pkg: "vendor",
+			tag: ipath,
+		}
 	}
 }
 
@@ -376,7 +383,7 @@ func (v *Vendorer) addRules(pkgPath string, rules []*bzl.Rule) {
 
 func (v *Vendorer) walkVendor() error {
 	var rules []*bzl.Rule
-	if err := v.walk(vendorPath, func(path, ipath string, pkg *build.Package) error {
+	updateFunc := func(path, ipath string, pkg *build.Package) error {
 		srcNameMap := func(srcs ...[]string) *bzl.ListExpr {
 			return asExpr(
 				apply(
@@ -412,7 +419,11 @@ func (v *Vendorer) walkVendor() error {
 		})...)
 
 		return nil
-	}); err != nil {
+	}
+	if v.cfg.VendorMultipleBuildFiles {
+		updateFunc = v.updatePkg
+	}
+	if err := v.walk(vendorPath, updateFunc); err != nil {
 		return err
 	}
 	v.addRules(vendorPath, rules)

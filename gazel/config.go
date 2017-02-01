@@ -14,6 +14,8 @@ type Cfg struct {
 	// whether to add "pkg-srcs" and "all-srcs" filegroups
 	// note that this operates on the entire tree (not just SrcsDirs) but skips anything matching SkippedPaths
 	AddSourcesRules bool
+	// whether to have multiple build files in vendor/ or just one.
+	VendorMultipleBuildFiles bool
 }
 
 func ReadCfg(cfgPath string) (*Cfg, error) {

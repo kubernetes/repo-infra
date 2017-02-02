@@ -650,8 +650,10 @@ func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 	for _, r := range rules {
 		// Select only the Go rules we need to import, excluding builtins like filegroup.
 		// TODO: make less fragile
-		if strings.HasPrefix(r.Kind(), "go_") || strings.HasPrefix(r.Kind(), "cgo_") {
-			usedRuleKindsMap[r.Kind()] = true
+		for _, rn := range []string{"go_library", "go_binary", "cgo_codegen", "go_test"} {
+			if r.Kind() == rn {
+				usedRuleKindsMap[r.Kind()] = true
+			}
 		}
 	}
 

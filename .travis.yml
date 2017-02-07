@@ -1,0 +1,17 @@
+dist: trusty
+sudo: required
+
+# Install Bazel and set up GOPATH.
+before_install:
+- wget https://github.com/bazelbuild/bazel/releases/download/0.4.4/bazel_0.4.4-linux-x86_64.deb
+- sudo dpkg -i bazel_0.4.4-linux-x86_64.deb
+- mkdir -p $GOPATH/src/github.com/mikedanese
+- mv $TRAVIS_BUILD_DIR $GOPATH/src/github.com/mikedanese
+- cd $GOPATH/src/github.com/mikedanese/gazel
+
+install:
+- go install ./...
+
+script:
+- gazel --print-diff --validate
+- bazel build //...

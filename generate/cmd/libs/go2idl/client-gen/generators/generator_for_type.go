@@ -29,11 +29,12 @@ import (
 // genClientForType produces a file for each top-level type.
 type genClientForType struct {
 	generator.DefaultGen
-	outputPackage string
-	group         string
-	version       string
-	typeToMatch   *types.Type
-	imports       namer.ImportTracker
+	outputPackage    string
+	clientsetPackage string
+	group            string
+	version          string
+	typeToMatch      *types.Type
+	imports          namer.ImportTracker
 }
 
 var _ generator.Generator = &genClientForType{}
@@ -78,20 +79,20 @@ func (g *genClientForType) GenerateType(c *generator.Context, t *types.Type, w i
 	pkg := filepath.Base(t.Name.Package)
 	namespaced := !extractBoolTagOrDie("nonNamespaced", t.SecondClosestCommentLines)
 	m := map[string]interface{}{
-		"resource":            c.Namers["allLowercasePlural"].Name(t), // default to a resource of the lower-case version of the type
-		"type":                t,
-		"package":             pkg,
-		"Package":             namer.IC(pkg),
-		"namespaced":          namespaced,
-		"Group":               namer.IC(g.group),
-		"GroupVersion":        namer.IC(g.group) + namer.IC(g.version),
-		"DeleteOptions":       c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/apis/meta/v1", Name: "DeleteOptions"}),
-		"ListOptions":         c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/apis/meta/v1", Name: "ListOptions"}),
-		"GetOptions":          c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/apis/meta/v1", Name: "GetOptions"}),
-		"PatchType":           c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/types", Name: "PatchType"}),
-		"watchInterface":      c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/watch", Name: "Interface"}),
-		"RESTClientInterface": c.Universe.Type(types.Name{Package: "k8s.io/client-go/rest", Name: "Interface"}),
-		"apiParameterCodec":   c.Universe.Type(types.Name{Package: "k8s.io/client-go/pkg/api", Name: "ParameterCodec"}),
+		"resource":             c.Namers["allLowercasePlural"].Name(t), // default to a resource of the lower-case version of the type
+		"type":                 t,
+		"package":              pkg,
+		"Package":              namer.IC(pkg),
+		"namespaced":           namespaced,
+		"Group":                namer.IC(g.group),
+		"GroupVersion":         namer.IC(g.group) + namer.IC(g.version),
+		"DeleteOptions":        c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/apis/meta/v1", Name: "DeleteOptions"}),
+		"ListOptions":          c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/apis/meta/v1", Name: "ListOptions"}),
+		"GetOptions":           c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/apis/meta/v1", Name: "GetOptions"}),
+		"PatchType":            c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/types", Name: "PatchType"}),
+		"watchInterface":       c.Universe.Type(types.Name{Package: "k8s.io/apimachinery/pkg/watch", Name: "Interface"}),
+		"RESTClientInterface":  c.Universe.Type(types.Name{Package: "k8s.io/client-go/rest", Name: "Interface"}),
+		"schemeParameterCodec": c.Universe.Variable(types.Name{Package: filepath.Join(g.clientsetPackage, "scheme"), Name: "ParameterCodec"}),
 	}
 
 	// allow overriding the resource name
@@ -249,7 +250,7 @@ func (c *$.type|privatePlural$) List(opts $.ListOptions|raw$) (result *$.type|ra
 	err = c.client.Get().
 		$if .namespaced$Namespace(c.ns).$end$
 		Resource("$.resource$").
-		VersionedParams(&opts, $.apiParameterCodec|raw$).
+		VersionedParams(&opts, $.schemeParameterCodec|raw$).
 		Do().
 		Into(result)
 	return
@@ -263,7 +264,7 @@ func (c *$.type|privatePlural$) Get(name string, options $.GetOptions|raw$) (res
 		$if .namespaced$Namespace(c.ns).$end$
 		Resource("$.resource$").
 		Name(name).
-		VersionedParams(&options, $.apiParameterCodec|raw$).
+		VersionedParams(&options, $.schemeParameterCodec|raw$).
 		Do().
 		Into(result)
 	return
@@ -289,7 +290,7 @@ func (c *$.type|privatePlural$) DeleteCollection(options *$.DeleteOptions|raw$, 
 	return c.client.Delete().
 		$if .namespaced$Namespace(c.ns).$end$
 		Resource("$.resource$").
-		VersionedParams(&listOptions, $.apiParameterCodec|raw$).
+		VersionedParams(&listOptions, $.schemeParameterCodec|raw$).
 		Body(options).
 		Do().
 		Error()
@@ -350,7 +351,7 @@ func (c *$.type|privatePlural$) Watch(opts $.ListOptions|raw$) ($.watchInterface
 		Prefix("watch").
 		$if .namespaced$Namespace(c.ns).$end$
 		Resource("$.resource$").
-		VersionedParams(&opts, $.apiParameterCodec|raw$).
+		VersionedParams(&opts, $.schemeParameterCodec|raw$).
 		Watch()
 }
 `

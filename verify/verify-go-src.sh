@@ -22,11 +22,49 @@ set -o pipefail
 # <repo>/
 #  repo-infra/
 #    verify/
+# Or via vendoring and passing root directory as vendor/repo-infra/verify-*.sh --rootdir **full path to your repo dir**
+# <repo>/
+#   vendor/
+#      repo-infra/
+#         ...
+# 
 
 
 SILENT=true
 REPO_ROOT=$(dirname "${BASH_SOURCE}")/../..
-GO_TOOLS_DIR="${REPO_ROOT}/repo-infra/verify/go-tools"
+
+# Convert long opts to short ones to read through getopts
+for arg in "$@"; do
+  shift
+  case "$arg" in
+    "--rootdir") set -- "$@" "-r";;
+    *)
+      set -- "$@" "$arg"
+      ;;
+  esac
+done
+
+OPTIND=1
+while getopts "vr:" opt; do
+  case ${opt} in
+    v)
+      SILENT=false
+      ;;
+    r)
+      REPO_ROOT=${OPTARG}
+      ;;
+    \?)
+      echo "Invalid flag: -${OPTARG}" >&2
+      exit 1
+      ;;
+  esac
+done
+
+shift "$(($OPTIND-1))"
+
+echo "Working directory: ${REPO_ROOT}"
+
+GO_TOOLS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/go-tools"
 
 function run-cmd {
   if ${SILENT}; then
@@ -53,7 +91,7 @@ function run-checks {
   do
     echo -e "Verifying ${t}"
     local start=$(date +%s)
-    run-cmd "${runner}" "${t}" && tr=$? || tr=$?
+    cd $REPO_ROOT && run-cmd "${runner}" "${t}" && tr=$? || tr=$?
     local elapsed=$(($(date +%s) - ${start}))
     if [[ ${tr} -eq 0 ]]; then
       echo -e "${color_green}SUCCESS${color_norm}  ${t}\t${elapsed}s"
@@ -63,18 +101,6 @@ function run-checks {
     fi
   done
 }
-
-while getopts ":v" opt; do
-  case ${opt} in
-    v)
-      SILENT=false
-      ;;
-    \?)
-      echo "Invalid flag: -${OPTARG}" >&2
-      exit 1
-      ;;
-  esac
-done
 
 if ${SILENT} ; then
   echo "Running in the silent mode, run with -v if you want to see script logs."

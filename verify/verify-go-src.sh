@@ -81,5 +81,5 @@ if ${SILENT} ; then
 fi
 
 ret=0
-run-checks "${GO_TOOLS_DIR}/verify-*.sh" bash
+run-checks "${GO_TOOLS_DIR}/*.sh" bash
 exit ${ret}

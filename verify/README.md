@@ -15,7 +15,9 @@ Verifies that the boilerplate for various formats (go files, Makefile, etc.) is 
 
 Runs a set of scripts on the go source code excluding vendored files: `verify-go-src.sh`
 
-Run with `-v` to see the output
+With git submodule from your repo root: `repo-infra/verify/verify-go-src.sh -v`
+
+With vendoring: `vendor/repo-infra/verify/verify-go-src.sh -v --rootdir $PWD`
 
 Checks include:
 

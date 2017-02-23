@@ -13,7 +13,30 @@ Verifies that the boilerplate for various formats (go files, Makefile, etc.) is 
 
 ## Verify go source code 
 
-Runs a set of scripts on the go source code excluding vendored files: `verify-go-src.sh`
+Runs a set of scripts on the go source code excluding vendored files: `verify-go-src.sh`. Expect `gometalinter` tooling installed. In travis file it would look like: 
+
+```
+dist: trusty
+
+os:
+- linux
+
+language: go
+
+go:
+- 1.8
+
+before_install:
+- go get -u github.com/alecthomas/gometalinter
+
+install:
+- gometalinter --install
+
+script:
+- repo-infra/verify/verify-go-src.sh
+# OR with vendoring 
+# - vendor/github.com/kubernetes/repo-infra/verify-go-src.sh --rootdir=$(PWD)
+```
 
 With git submodule from your repo root: `repo-infra/verify/verify-go-src.sh -v`
 

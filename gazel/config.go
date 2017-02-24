@@ -16,6 +16,8 @@ type Cfg struct {
 	AddSourcesRules bool
 	// whether to have multiple build files in vendor/ or just one.
 	VendorMultipleBuildFiles bool
+	// whether to manage kubernetes' pkg/generated/openapi.
+	K8sOpenAPIGen bool
 }
 
 func ReadCfg(cfgPath string) (*Cfg, error) {

@@ -56,6 +56,9 @@ func main() {
 	if err := v.walkRepo(); err != nil {
 		glog.Fatalf("err walking repo: %v", err)
 	}
+	if err := v.walkGenerated(); err != nil {
+		glog.Fatalf("err walking generated: %v", err)
+	}
 	if _, err := v.walkSource("."); err != nil {
 		glog.Fatalf("err walking source: %v", err)
 	}
@@ -77,6 +80,7 @@ type Vendorer struct {
 	root         string
 	cfg          *Cfg
 	newRules     map[string][]*bzl.Rule // package path -> list of rules to add or update
+	managedAttrs []string
 }
 
 func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
@@ -93,12 +97,13 @@ func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 	}
 
 	v := Vendorer{
-		ctx:      context(),
-		dryRun:   dryRun,
-		root:     absRoot,
-		icache:   map[icacheKey]icacheVal{},
-		cfg:      cfg,
-		newRules: make(map[string][]*bzl.Rule),
+		ctx:          context(),
+		dryRun:       dryRun,
+		root:         absRoot,
+		icache:       map[icacheKey]icacheVal{},
+		cfg:          cfg,
+		newRules:     make(map[string][]*bzl.Rule),
+		managedAttrs: []string{"srcs", "deps", "library"},
 	}
 
 	for _, sp := range cfg.SkippedPaths {
@@ -262,6 +267,7 @@ const (
 	RuleTypeGoXTest
 	RuleTypeCGoGenrule
 	RuleTypeFileGroup
+	RuleTypeOpenAPILibrary
 )
 
 func (rt RuleType) RuleKind() string {
@@ -278,6 +284,8 @@ func (rt RuleType) RuleKind() string {
 		return "cgo_genrule"
 	case RuleTypeFileGroup:
 		return "filegroup"
+	case RuleTypeOpenAPILibrary:
+		return "openapi_library"
 	}
 	panic("unreachable")
 }
@@ -467,7 +475,7 @@ func (v *Vendorer) reconcileAllRules() (int, error) {
 	sort.Strings(paths)
 	written := 0
 	for _, path := range paths {
-		w, err := ReconcileRules(path, v.newRules[path], v.dryRun)
+		w, err := ReconcileRules(path, v.newRules[path], v.managedAttrs, v.dryRun)
 		if w {
 			written++
 		}
@@ -596,7 +604,7 @@ func findBuildFile(pkgPath string) (bool, string) {
 	return false, filepath.Join(pkgPath, "BUILD")
 }
 
-func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) (bool, error) {
+func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dryRun bool) (bool, error) {
 	_, path := findBuildFile(pkgPath)
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
@@ -639,9 +647,9 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, dryRun bool) (bool, error
 				o.DelAttr(name)
 			}
 		}
-		reconcileAttr(o, r, "srcs")
-		reconcileAttr(o, r, "deps")
-		reconcileAttr(o, r, "library")
+		for _, attr := range managedAttrs {
+			reconcileAttr(o, r, attr)
+		}
 		delete(oldRules, r.Name())
 	}
 

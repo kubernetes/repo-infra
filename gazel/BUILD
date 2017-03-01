@@ -20,6 +20,7 @@ go_library(
         "config.go",
         "diff.go",
         "gazel.go",
+        "generator.go",
         "sourcerer.go",
     ],
     tags = ["automanaged"],

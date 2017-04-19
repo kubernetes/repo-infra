@@ -66,6 +66,7 @@ def md5sum(name, src, visibility=None):
         # Currently each go_binary target has two outputs (the binary and the library),
         # so we hash both but only save the hash for the binary.
         cmd = "for f in $(SRCS); do if command -v md5 >/dev/null; then md5 -q $$f>$@; else md5sum $$f | awk '{print $$1}' > $@; fi; done",
+        message = "Computing md5sum",
         visibility = visibility,
 )
 
@@ -78,6 +79,7 @@ def sha1sum(name, src, visibility=None):
         # Currently each go_binary target has two outputs (the binary and the library),
         # so we hash both but only save the hash for the binary.
         cmd = "command -v sha1sum >/dev/null && cmd=sha1sum || cmd='shasum -a1'; for f in $(SRCS); do $$cmd $$f | awk '{print $$1}' > $@; done",
+        message = "Computing sha1sum",
         visibility = visibility,
 )
 

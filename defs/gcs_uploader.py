@@ -23,22 +23,42 @@ import subprocess
 import sys
 import tempfile
 
+def _workspace_status_dict(root):
+    d = {}
+    for f in ("stable-status.txt", "volatile-status.txt"):
+        with open(os.path.join(root, f)) as info_file:
+            for info_line in info_file:
+                info_line = info_line.strip("\n")
+                key, value = info_line.split(" ")
+                d[key] = value
+    return d
 
 def main(argv):
     scratch = tempfile.mkdtemp(prefix="bazel-gcs.")
     atexit.register(lambda: shutil.rmtree(scratch))
 
+    workspace_status = _workspace_status_dict(argv.root)
+    gcs_path = argv.gcs_path.format(**workspace_status)
+
     with open(argv.manifest) as manifest:
         for artifact in manifest:
-            artifact = artifact.strip()
+            artifact = artifact.strip("\n")
+            src_file, dest_dir = artifact.split("\t")
+            dest_dir = dest_dir.format(**workspace_status)
+            scratch_dest_dir = os.path.join(scratch, dest_dir)
             try:
-                os.makedirs(os.path.join(scratch, os.path.dirname(artifact)))
+                os.makedirs(scratch_dest_dir)
             except (OSError):
                 # skip directory already exists errors
                 pass
-            os.symlink(os.path.join(argv.root, artifact), os.path.join(scratch, artifact))
 
-    sys.exit(subprocess.call(["gsutil", "-m", "rsync", "-C", "-r", scratch, argv.gcs_path]))
+            src = os.path.join(argv.root, src_file)
+            dest = os.path.join(scratch_dest_dir, os.path.basename(src_file))
+            os.symlink(src, dest)
+
+    ret = subprocess.call(["gsutil", "-m", "rsync", "-C", "-r", scratch, gcs_path])
+    print "Uploaded to %s" % gcs_path
+    sys.exit(ret)
 
 
 if __name__ == '__main__':

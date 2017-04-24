@@ -690,6 +690,10 @@ func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 		if args[0] != goRulesLabel {
 			continue
 		}
+		if len(usedRuleKindsList) == 0 {
+			f.DelRules(r.Kind(), r.Name())
+			continue
+		}
 		r.Call.List = asExpr(append(
 			[]string{goRulesLabel}, usedRuleKindsList...,
 		)).(*bzl.ListExpr).List

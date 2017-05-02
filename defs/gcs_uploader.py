@@ -38,8 +38,6 @@ def main(argv):
     atexit.register(lambda: shutil.rmtree(scratch))
 
     workspace_status = _workspace_status_dict(argv.root)
-    gcs_path = argv.gcs_path.format(**workspace_status)
-
     with open(argv.manifest) as manifest:
         for artifact in manifest:
             artifact = artifact.strip("\n")
@@ -56,8 +54,20 @@ def main(argv):
             dest = os.path.join(scratch_dest_dir, os.path.basename(src_file))
             os.symlink(src, dest)
 
-    ret = subprocess.call(["gsutil", "-m", "rsync", "-C", "-r", scratch, gcs_path])
-    print "Uploaded to %s" % gcs_path
+    ret = 0
+    uploaded_paths = []
+    for gcs_path in argv.gcs_paths:
+        gcs_path = gcs_path.format(**workspace_status)
+        local_path = None
+        if gcs_path.startswith("file://"):
+            local_path = gcs_path[len("file://"):]
+        elif "://" not in gcs_path:
+            local_path = gcs_path
+        if local_path and not os.path.exists(local_path):
+            os.makedirs(local_path)
+        ret |= subprocess.call(["gsutil", "-m", "rsync", "-C", "-r", scratch, gcs_path])
+        uploaded_paths.append(gcs_path)
+    print "Uploaded to %s" % " ".join(uploaded_paths)
     sys.exit(ret)
 
 
@@ -66,6 +76,6 @@ if __name__ == '__main__':
 
     parser.add_argument("--manifest", required=True, help="path to manifest of targets")
     parser.add_argument("--root", required=True, help="path to root of workspace")
-    parser.add_argument("gcs_path", help="path in gcs to push targets")
+    parser.add_argument("gcs_paths", nargs="+", help="path in gcs to push targets")
 
     main(parser.parse_args())

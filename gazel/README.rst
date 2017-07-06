@@ -13,7 +13,7 @@ Requirements:
 Usage:
 ######
 
-1. Get gazel by running ``go get github.com/mikedanese/gazel/gazel``.
+1. Get gazel by running ``go get k8s.io/repo-infra/gazel``.
 
 2. Create a ``.gazelcfg.json`` in the root of the repository. For the
    gazel repository, the ``.gazelcfg.json`` would look like:
@@ -21,7 +21,7 @@ Usage:
   .. code-block:: json
 
    {
-     "GoPrefix": "github.com/mikedanese/gazel",
+     "GoPrefix": "k8s.io/repo-infra",
      "SrcDirs": [
        "./gazel"
      ],
@@ -34,7 +34,7 @@ Usage:
 
   .. code-block:: bash
 
-    $ gazel -root=$GOPATH/src/github.com/mikedanese/gazel
+    $ gazel -root=$GOPATH/src/k8s.io/repo-infra
 
 Defaults:
 #########
@@ -81,16 +81,6 @@ You can remove the "**automanaged**" tag from the "**package-srcs**"
 rule if you need to modify the glob (such as adding excludes).
 It's recommended that you leave the "**all-srcs**" rule
 automanaged.
-
-Getting latest stable version:
-##############################
-
-The latest tagged release of gazel is v14. To get the latest
-stable version of gazel run:
-
-.. code-block:: bash
-
-   $ go get -u gopkg.in/mikedanese/gazel.v14/gazel
 
 Validating BUILD files in CI:
 #############################

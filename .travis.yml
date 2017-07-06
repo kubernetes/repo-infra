@@ -6,9 +6,9 @@ before_install:
 - go get -u github.com/alecthomas/gometalinter
 - wget https://github.com/bazelbuild/bazel/releases/download/0.4.4/bazel_0.4.4-linux-x86_64.deb
 - sudo dpkg -i bazel_0.4.4-linux-x86_64.deb
-- mkdir -p $GOPATH/src/github.com/mikedanese
-- mv $TRAVIS_BUILD_DIR $GOPATH/src/github.com/mikedanese
-- cd $GOPATH/src/github.com/mikedanese/gazel
+- mkdir -p $GOPATH/src/k8s.io
+- mv $TRAVIS_BUILD_DIR $GOPATH/src/k8s.io
+- cd $GOPATH/src/k8s.io/repo-infra
 
 install:
   - gometalinter --install

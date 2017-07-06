@@ -30,7 +30,7 @@ var (
 	dryRun    = flag.Bool("dry-run", false, "run in dry mode")
 	printDiff = flag.Bool("print-diff", false, "print diff to stdout")
 	validate  = flag.Bool("validate", false, "run in dry mode and exit nonzero if any BUILD files need to be updated")
-	cfgPath   = flag.String("cfg-path", ".gazelcfg.json", "path to gazel config (relative paths interpreted relative to -repo.")
+	cfgPath   = flag.String("cfg-path", ".kazelcfg.json", "path to kazel config (relative paths interpreted relative to -repo.")
 )
 
 func main() {

@@ -16,7 +16,7 @@ const (
 // walkSource walks the source tree recursively from pkgPath, adding
 // any BUILD files to v.newRules to be formatted.
 //
-// If AddSourcesRules is enabled in the Gazel config, then we additionally add
+// If AddSourcesRules is enabled in the kazel config, then we additionally add
 // package-sources and recursive all-srcs filegroups rules to every BUILD file.
 //
 // Returns the list of children all-srcs targets that should be added to the

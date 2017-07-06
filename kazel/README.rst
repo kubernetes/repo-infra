@@ -1,11 +1,11 @@
-gazel - a BUILD file generator for go and bazel
+kazel - a BUILD file generator for go and bazel
 ===============================================
 
 Requirements:
 #############
 
 * Your project must be somewhat compatible with go tool because
-  gazel uses go tool to parse your import tree.
+  kazel uses go tool to parse your import tree.
 * You must have a **GOPATH** and **GOROOT** setup and your project must
   be in the correct location in your **GOPATH**.
 * Your ``./vendor`` directory may not contain ``BUILD`` files.
@@ -13,55 +13,55 @@ Requirements:
 Usage:
 ######
 
-1. Get gazel by running ``go get k8s.io/repo-infra/gazel``.
+1. Get kazel by running ``go get k8s.io/repo-infra/kazel``.
 
-2. Create a ``.gazelcfg.json`` in the root of the repository. For the
-   gazel repository, the ``.gazelcfg.json`` would look like:
+2. Create a ``.kazelcfg.json`` in the root of the repository. For the
+   kazel repository, the ``.kazelcfg.json`` would look like:
 
   .. code-block:: json
 
    {
      "GoPrefix": "k8s.io/repo-infra",
      "SrcDirs": [
-       "./gazel"
+       "./kazel"
      ],
      "SkippedPaths": [
        ".*foobar(baz)?.*$"
      ]
    }
 
-3. Run gazel:
+3. Run kazel:
 
   .. code-block:: bash
 
-    $ gazel -root=$GOPATH/src/k8s.io/repo-infra
+    $ kazel -root=$GOPATH/src/k8s.io/repo-infra
 
 Defaults:
 #########
 
-* **SrcDirs** in ``.gazelcfg.json`` defaults to ``["./"]``
+* **SrcDirs** in ``.kazelcfg.json`` defaults to ``["./"]``
 * ``-root`` option defaults to the current working directory
 
 Automanagement:
 ###############
 
-gazel reconciles rules that have the "**automanaged**" tag. If
-you no longer want gazel to manage a rule, you can remove the
-**automanaged** tag and gazel will no longer manage that rule.
+kazel reconciles rules that have the "**automanaged**" tag. If
+you no longer want kazel to manage a rule, you can remove the
+**automanaged** tag and kazel will no longer manage that rule.
 
-gazel only manages srcs, deps, and library attributes of a
+kazel only manages srcs, deps, and library attributes of a
 rule after initial creation so you can add and managed other
-attributes like data and copts and gazel will respect your
+attributes like data and copts and kazel will respect your
 changes.
 
-gazel automatically formats all ``BUILD`` files in your repository
+kazel automatically formats all ``BUILD`` files in your repository
 except for those matching **SkippedPaths**.
 
 Adding "sources" rules:
 #######################
 
-If you set "**AddSourcesRules**": ``true`` in your ``.gazelcfg.json``,
-gazel will create "**package-srcs**" and "**all-srcs**" rules in every
+If you set "**AddSourcesRules**": ``true`` in your ``.kazelcfg.json``,
+kazel will create "**package-srcs**" and "**all-srcs**" rules in every
 package.
 
 The "**package-srcs**" rule is a glob matching all files in the
@@ -85,6 +85,6 @@ automanaged.
 Validating BUILD files in CI:
 #############################
 
-If you run gazel with ``--validate``, it will not update any ``BUILD`` files, but it
+If you run kazel with ``--validate``, it will not update any ``BUILD`` files, but it
 will exit nonzero if any ``BUILD`` files are out-of-date. You can add ``--print-diff``
 to print out the changes needed.

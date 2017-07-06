@@ -9,7 +9,7 @@ load(
 )
 
 go_binary(
-    name = "gazel",
+    name = "kazel",
     library = ":go_default_library",
     tags = ["automanaged"],
 )
@@ -19,8 +19,8 @@ go_library(
     srcs = [
         "config.go",
         "diff.go",
-        "gazel.go",
         "generator.go",
+        "kazel.go",
         "sourcerer.go",
     ],
     tags = ["automanaged"],

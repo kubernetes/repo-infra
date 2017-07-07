@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 )
 
+// Cfg defines the configuration options for kazel.
 type Cfg struct {
 	GoPrefix string
 	// evaluated recursively, defaults to ["."]
@@ -36,6 +37,7 @@ type Cfg struct {
 	K8sOpenAPIGen bool
 }
 
+// ReadCfg reads and unmarshals the specified json file into a Cfg struct.
 func ReadCfg(cfgPath string) (*Cfg, error) {
 	b, err := ioutil.ReadFile(cfgPath)
 	if err != nil {

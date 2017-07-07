@@ -22,6 +22,8 @@ import (
 	"os/exec"
 )
 
+// Diff prints the unified diff of the two provided byte slices
+// using the unix diff command.
 func Diff(left, right []byte) error {
 	lf, err := ioutil.TempFile("/tmp", "actual-file-")
 	if err != nil {

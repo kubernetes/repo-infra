@@ -51,7 +51,7 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 	}
 
 	// Find any children packages we need to include in an all-srcs rule.
-	var children []string = nil
+	var children []string
 	for _, f := range files {
 		if f.IsDir() {
 			c, err := v.walkSource(filepath.Join(pkgPath, f.Name()))
@@ -92,13 +92,13 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 
 	v.addRules(pkgPath, []*bzl.Rule{
 		newRule(RuleTypeFileGroup,
-			func(_ RuleType) string { return pkgSrcsTarget },
+			func(_ ruleType) string { return pkgSrcsTarget },
 			map[string]bzl.Expr{
 				"srcs":       pkgSrcsExpr,
 				"visibility": asExpr([]string{"//visibility:private"}),
 			}),
 		newRule(RuleTypeFileGroup,
-			func(_ RuleType) string { return allSrcsTarget },
+			func(_ ruleType) string { return allSrcsTarget },
 			map[string]bzl.Expr{
 				"srcs": asExpr(append(children, fmt.Sprintf(":%s", pkgSrcsTarget))),
 			}),

@@ -58,24 +58,24 @@ func main() {
 	if *validate {
 		*dryRun = true
 	}
-	v, err := NewVendorer(*root, *cfgPath, *dryRun)
+	v, err := newVendorer(*root, *cfgPath, *dryRun)
 	if err != nil {
 		glog.Fatalf("unable to build vendorer: %v", err)
 	}
-	if err := os.Chdir(v.root); err != nil {
+	if err = os.Chdir(v.root); err != nil {
 		glog.Fatalf("cannot chdir into root %q: %v", v.root, err)
 	}
 
-	if err := v.walkVendor(); err != nil {
+	if err = v.walkVendor(); err != nil {
 		glog.Fatalf("err walking vendor: %v", err)
 	}
-	if err := v.walkRepo(); err != nil {
+	if err = v.walkRepo(); err != nil {
 		glog.Fatalf("err walking repo: %v", err)
 	}
-	if err := v.walkGenerated(); err != nil {
+	if err = v.walkGenerated(); err != nil {
 		glog.Fatalf("err walking generated: %v", err)
 	}
-	if _, err := v.walkSource("."); err != nil {
+	if _, err = v.walkSource("."); err != nil {
 		glog.Fatalf("err walking source: %v", err)
 	}
 	written := 0
@@ -88,6 +88,7 @@ func main() {
 	}
 }
 
+// Vendorer collects context, configuration, and cache while walking the tree.
 type Vendorer struct {
 	ctx          *build.Context
 	icache       map[icacheKey]icacheVal
@@ -99,7 +100,7 @@ type Vendorer struct {
 	managedAttrs []string
 }
 
-func NewVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
+func newVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 	absRoot, err := filepath.Abs(root)
 	if err != nil {
 		return nil, fmt.Errorf("could not get absolute path: %v", err)
@@ -163,7 +164,7 @@ func (v *Vendorer) importPkg(path string, srcDir string) (*build.Package, error)
 
 func writeHeaders(file *bzl.File) {
 	pkgRule := bzl.Rule{
-		&bzl.CallExpr{
+		Call: &bzl.CallExpr{
 			X: &bzl.LiteralExpr{Token: "package"},
 		},
 	}
@@ -208,11 +209,10 @@ func (v *Vendorer) resolve(ipath string) Label {
 			pkg: "vendor/" + ipath,
 			tag: "go_default_library",
 		}
-	} else {
-		return Label{
-			pkg: "vendor",
-			tag: ipath,
-		}
+	}
+	return Label{
+		pkg: "vendor",
+		tag: ipath,
 	}
 }
 
@@ -244,9 +244,8 @@ func (v *Vendorer) walk(root string, f func(path, ipath string, pkg *build.Packa
 		if err != nil {
 			if _, ok := err.(*build.NoGoError); err != nil && ok {
 				return nil
-			} else {
-				return err
 			}
+			return err
 		}
 
 		return f(path, ipath, pkg)
@@ -267,17 +266,17 @@ func (v *Vendorer) updateSinglePkg(path string) error {
 	if err != nil {
 		if _, ok := err.(*build.NoGoError); err != nil && ok {
 			return nil
-		} else {
-			return err
 		}
+		return err
 	}
 	return v.updatePkg(path, "", pkg)
 }
 
-type RuleType int
+type ruleType int
 
+// The RuleType* constants enumerate the bazel rules supported by this tool.
 const (
-	RuleTypeGoBinary RuleType = iota
+	RuleTypeGoBinary ruleType = iota
 	RuleTypeGoLibrary
 	RuleTypeGoTest
 	RuleTypeGoXTest
@@ -286,7 +285,8 @@ const (
 	RuleTypeOpenAPILibrary
 )
 
-func (rt RuleType) RuleKind() string {
+// RuleKind converts a value of the RuleType* enum into the BUILD string.
+func (rt ruleType) RuleKind() string {
 	switch rt {
 	case RuleTypeGoBinary:
 		return "go_binary"
@@ -306,7 +306,8 @@ func (rt RuleType) RuleKind() string {
 	panic("unreachable")
 }
 
-type NamerFunc func(RuleType) string
+// NamerFunc is a function that returns the appropriate name for the rule for the provided RuleType.
+type NamerFunc func(ruleType) string
 
 func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 
@@ -319,7 +320,7 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 	testSrcs := srcNameMap(pkg.TestGoFiles)
 	xtestSrcs := srcNameMap(pkg.XTestGoFiles)
 
-	v.addRules(path, v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
+	v.addRules(path, v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt ruleType) string {
 		switch rt {
 		case RuleTypeGoBinary:
 			return filepath.Base(pkg.Dir)
@@ -339,7 +340,7 @@ func (v *Vendorer) updatePkg(path, _ string, pkg *build.Package) error {
 }
 
 func (v *Vendorer) emit(srcs, cgoSrcs, testSrcs, xtestSrcs *bzl.ListExpr, pkg *build.Package, namer NamerFunc) []*bzl.Rule {
-	var goLibAttrs Attrs = make(Attrs)
+	var goLibAttrs = make(Attrs)
 	var rules []*bzl.Rule
 
 	deps := v.extractDeps(pkg.Imports)
@@ -426,7 +427,7 @@ func (v *Vendorer) walkVendor() error {
 
 		tagBase := v.resolve(ipath).tag
 
-		rules = append(rules, v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt RuleType) string {
+		rules = append(rules, v.emit(srcs, cgoSrcs, testSrcs, xtestSrcs, pkg, func(rt ruleType) string {
 			switch rt {
 			case RuleTypeGoBinary:
 				return tagBase + "_bin"
@@ -485,7 +486,7 @@ func (v *Vendorer) extractDeps(deps []string) *bzl.ListExpr {
 
 func (v *Vendorer) reconcileAllRules() (int, error) {
 	var paths []string
-	for path, _ := range v.newRules {
+	for path := range v.newRules {
 		paths = append(paths, path)
 	}
 	sort.Strings(paths)
@@ -502,12 +503,15 @@ func (v *Vendorer) reconcileAllRules() (int, error) {
 	return written, nil
 }
 
+// Attrs collects the attributes for a rule.
 type Attrs map[string]bzl.Expr
 
+// Set sets the named attribute to the provided bazel expression.
 func (a Attrs) Set(name string, expr bzl.Expr) {
 	a[name] = expr
 }
 
+// SetList sets the named attribute to the provided bazel expression list.
 func (a Attrs) SetList(name string, expr *bzl.ListExpr) {
 	if len(expr.List) == 0 {
 		return
@@ -515,6 +519,7 @@ func (a Attrs) SetList(name string, expr *bzl.ListExpr) {
 	a[name] = expr
 }
 
+// Label defines a bazel label.
 type Label struct {
 	pkg, tag string
 }
@@ -545,7 +550,7 @@ func asExpr(e interface{}) bzl.Expr {
 	}
 }
 
-type Sed func(s []string) []string
+type sed func(s []string) []string
 
 func mapString(in []string, f func(string) string) []string {
 	var out []string
@@ -555,7 +560,7 @@ func mapString(in []string, f func(string) string) []string {
 	return out
 }
 
-func mapper(f func(string) string) Sed {
+func mapper(f func(string) string) sed {
 	return func(in []string) []string {
 		return mapString(in, f)
 	}
@@ -571,13 +576,13 @@ func filterString(in []string, f func(string) bool) []string {
 	return out
 }
 
-func filterer(f func(string) bool) Sed {
+func filterer(f func(string) bool) sed {
 	return func(in []string) []string {
 		return filterString(in, f)
 	}
 }
 
-func apply(stream []string, seds ...Sed) []string {
+func apply(stream []string, seds ...sed) []string {
 	for _, sed := range seds {
 		stream = sed(stream)
 	}
@@ -592,7 +597,7 @@ func merge(streams ...[]string) []string {
 	return out
 }
 
-func newRule(rt RuleType, namer NamerFunc, attrs map[string]bzl.Expr) *bzl.Rule {
+func newRule(rt ruleType, namer NamerFunc, attrs map[string]bzl.Expr) *bzl.Rule {
 	rule := &bzl.Rule{
 		Call: &bzl.CallExpr{
 			X: &bzl.LiteralExpr{Token: rt.RuleKind()},
@@ -620,6 +625,8 @@ func findBuildFile(pkgPath string) (bool, string) {
 	return false, filepath.Join(pkgPath, "BUILD")
 }
 
+// ReconcileRules reconciles, simplifies, and writes the rules for the specified package, adding
+// additional dependency rules as needed.
 func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dryRun bool) (bool, error) {
 	_, path := findBuildFile(pkgPath)
 	info, err := os.Stat(path)
@@ -692,7 +699,7 @@ func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 	}
 
 	usedRuleKindsList := []string{}
-	for k, _ := range usedRuleKindsMap {
+	for k := range usedRuleKindsMap {
 		usedRuleKindsList = append(usedRuleKindsList, k)
 	}
 	sort.Strings(usedRuleKindsList)
@@ -717,6 +724,8 @@ func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
 	}
 }
 
+// RuleIsManaged returns whether the provided rule is managed by this tool,
+// based on the tags set on the rule.
 func RuleIsManaged(r *bzl.Rule) bool {
 	var automanaged bool
 	for _, tag := range r.AttrStrings("tags") {

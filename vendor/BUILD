@@ -31,9 +31,3 @@ go_library(
     ],
     tags = ["automanaged"],
 )
-
-go_library(
-    name = "go/path/filepath",
-    srcs = ["go/path/filepath/path.go"],
-    tags = ["automanaged"],
-)

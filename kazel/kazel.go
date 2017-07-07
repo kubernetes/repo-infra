@@ -30,8 +30,6 @@ import (
 	"sort"
 	"strings"
 
-	"go/path/filepath"
-
 	bzl "github.com/bazelbuild/buildifier/core"
 	"github.com/golang/glog"
 )
@@ -221,7 +219,7 @@ func (v *Vendorer) walk(root string, f func(path, ipath string, pkg *build.Packa
 	if root == vendorPath {
 		skipVendor = false
 	}
-	return sfilepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

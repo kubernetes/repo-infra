@@ -27,6 +27,5 @@ go_library(
     deps = [
         "//vendor:github.com/bazelbuild/buildifier/core",
         "//vendor:github.com/golang/glog",
-        "//vendor:go/path/filepath",
     ],
 )

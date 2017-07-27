@@ -1,3 +1,6 @@
+load("@io_bazel_rules_go//go:def.bzl", "GoSource")
+load("@io_bazel_rules_go//go/private:common.bzl", "get_go_toolchain")
+
 go_filetype = ["*.go"]
 
 def _compute_genrule_variables(resolved_srcs, resolved_outs):
@@ -10,7 +13,7 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
   return variables
 
 def _go_sources_aspect_impl(target, ctx):
-  transitive_sources = set(target.go_sources)
+  transitive_sources = set(target[GoSource].go_sources)
   for dep in ctx.rule.attr.deps:
     transitive_sources = transitive_sources | dep.transitive_sources
   return struct(transitive_sources = transitive_sources)
@@ -58,7 +61,8 @@ def _compute_genrule_command(ctx):
   return '\n'.join(cmd)
 
 def _go_genrule_impl(ctx):
-  all_srcs = set(ctx.attr._go_toolchain.stdlib)
+  go_toolchain = get_go_toolchain(ctx)
+  all_srcs = set(go_toolchain.stdlib)
   label_dict = {}
 
   for dep in ctx.attr.go_deps:
@@ -82,7 +86,7 @@ def _go_genrule_impl(ctx):
   ctx.action(
       inputs = list(all_srcs) + resolved_inputs,
       outputs = ctx.outputs.outs,
-      env = ctx.configuration.default_shell_env + ctx.attr._go_toolchain.env,
+      env = ctx.configuration.default_shell_env + go_toolchain.env,
       command = argv,
       progress_message = "%s %s" % (ctx.attr.message, ctx),
       mnemonic = "GoGenrule",

@@ -65,8 +65,18 @@ def main(argv):
             local_path = gcs_path
         if local_path and not os.path.exists(local_path):
             os.makedirs(local_path)
-        ret |= subprocess.call(["gsutil", "-m", "rsync", "-C", "-r", scratch, gcs_path])
+
+        cmd = ["gsutil"]
+        # When rsyncing to a local directory, parallelization thrashes the disk.
+        # It also seems to be buggy, causing frequent "File exists" errors.
+        # To mitigate, only use parallel mode when rsyncing to a remote path.
+        if not local_path:
+            cmd.append("-m")
+        cmd.extend(["rsync", "-C", "-r", scratch, gcs_path])
+        ret |= subprocess.call(cmd)
+
         uploaded_paths.append(gcs_path)
+
     print "Uploaded to %s" % " ".join(uploaded_paths)
     sys.exit(ret)
 

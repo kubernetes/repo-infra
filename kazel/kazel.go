@@ -174,10 +174,6 @@ func writeHeaders(file *bzl.File) {
 		[]bzl.Expr{
 			pkgRule.Call,
 			&bzl.CallExpr{
-				X:    &bzl.LiteralExpr{Token: "licenses"},
-				List: []bzl.Expr{asExpr([]string{"notice"})},
-			},
-			&bzl.CallExpr{
 				X: &bzl.LiteralExpr{Token: "load"},
 				List: asExpr([]string{
 					"@io_bazel_rules_go//go:def.bzl",

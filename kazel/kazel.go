@@ -64,11 +64,13 @@ func main() {
 		glog.Fatalf("cannot chdir into root %q: %v", v.root, err)
 	}
 
-	if err = v.walkVendor(); err != nil {
-		glog.Fatalf("err walking vendor: %v", err)
-	}
-	if err = v.walkRepo(); err != nil {
-		glog.Fatalf("err walking repo: %v", err)
+	if v.cfg.ManageGoRules {
+		if err = v.walkVendor(); err != nil {
+			glog.Fatalf("err walking vendor: %v", err)
+		}
+		if err = v.walkRepo(); err != nil {
+			glog.Fatalf("err walking repo: %v", err)
+		}
 	}
 	if err = v.walkGenerated(); err != nil {
 		glog.Fatalf("err walking generated: %v", err)

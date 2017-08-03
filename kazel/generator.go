@@ -106,6 +106,12 @@ func (v *Vendorer) addGeneratedOpenAPIRule(paths []string) error {
 	sort.Strings(vendorTargets)
 
 	pkgPath := filepath.Join("pkg", "generated", "openapi")
+	// If we haven't walked this package yet, walk it so there is a go_library rule to modify
+	if len(v.newRules[pkgPath]) == 0 {
+		if err := v.updateSinglePkg(pkgPath); err != nil {
+			return err
+		}
+	}
 	for _, r := range v.newRules[pkgPath] {
 		if r.Name() == "go_default_library" {
 			r.SetAttr("openapi_targets", asExpr(openAPITargets))

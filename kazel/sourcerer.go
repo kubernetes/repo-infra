@@ -101,6 +101,8 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 			func(_ ruleType) string { return allSrcsTarget },
 			map[string]bzl.Expr{
 				"srcs": asExpr(append(children, fmt.Sprintf(":%s", pkgSrcsTarget))),
+				// TODO: should this be more restricted?
+				"visibility": asExpr([]string{"//visibility:public"}),
 			}),
 	})
 	return []string{fmt.Sprintf("//%s:%s", pkgPath, allSrcsTarget)}, nil

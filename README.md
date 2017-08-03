@@ -54,8 +54,8 @@ After this command, you will have:
 1.  A `repo-infra` directory in your project containing the content of **this**
     project
 2.  2 new commits in the active branch:
-  1.  A commit that squashes the git history of the `repo-infra` project
-  2.  A merge commit whose ancestors are:
-    1.  The `HEAD` of the branch prior to when you ran `git subtree add`
-    2.  The commit containing the squashed `repo-infra` commits
+    1.  A commit that squashes the git history of the `repo-infra` project
+    2.  A merge commit whose ancestors are:
+        1.  The `HEAD` of the branch prior to when you ran `git subtree add`
+        2.  The commit containing the squashed `repo-infra` commits
 

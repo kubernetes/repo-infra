@@ -1,5 +1,5 @@
 # Kubernetes repository infrastructure
-[![Build Status](https://travis-ci.org/kubernetes/repo-infra.svg?branch=master)](https://travis-ci.org/kubernetes/repo-infra)
+[![Build Status](https://travis-ci.org/kubernetes/repo-infra.svg?branch=master)](https://travis-ci.org/kubernetes/repo-infra)  [![Go Report Card](https://goreportcard.com/badge/github.com/kubernetes/repo-infra)](https://goreportcard.com/report/github.com/kubernetes/repo-infra)
 
 This repository contains repository infrastructure tools for use in
 `kubernetes` and `kubernetes-incubator` repositories.  Examples:

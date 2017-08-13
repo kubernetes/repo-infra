@@ -20,7 +20,7 @@ This repository can be used via some golang "vendoring" mechanism
 
 The exact mechanism to pull in this repository will vary depending on
 the tool you use. However, unless you end up having this repository
-at the root of your project's repository you wll probably need to 
+at the root of your project's repository you will probably need to 
 make sure you use the `--rootdir` command line parameter to let the
 `verify-boilerplate.sh` know its location, eg:
 

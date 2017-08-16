@@ -228,7 +228,7 @@ func (v *Vendorer) walk(root string, f func(path, ipath string, pkg *build.Packa
 			return filepath.SkipDir
 		}
 		for _, r := range v.skippedPaths {
-			if r.Match([]byte(path)) {
+			if r.MatchString(path) {
 				return filepath.SkipDir
 			}
 		}

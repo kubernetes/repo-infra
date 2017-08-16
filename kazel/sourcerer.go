@@ -41,7 +41,7 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 	// clean pkgPath since we access v.newRules directly
 	pkgPath = filepath.Clean(pkgPath)
 	for _, r := range v.skippedPaths {
-		if r.Match([]byte(pkgPath)) {
+		if r.MatchString(pkgPath) {
 			return nil, nil
 		}
 	}

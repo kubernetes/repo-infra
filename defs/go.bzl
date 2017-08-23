@@ -41,14 +41,15 @@ def _compute_genrule_command(ctx):
   cmd = [
       'set -e',
       # setup main GOPATH
-      'export GOPATH=/tmp/gopath',
+      'GENRULE_TMPDIR=$$(mktemp -d $${TMPDIR:-/tmp}/bazel_%s_XXXXXXXX)' % ctx.attr.name,
+      'export GOPATH=$${GENRULE_TMPDIR}/gopath',
       'export GO_WORKSPACE=$${GOPATH}/src/' + ctx.attr.go_prefix.go_prefix,
       'mkdir -p $${GO_WORKSPACE%/*}',
       'ln -s %s/ $${GO_WORKSPACE}' % (workspace_root,),
       'if [[ ! -e $${GO_WORKSPACE}/external ]]; then ln -s $$(pwd)/external/ $${GO_WORKSPACE}/; fi',
       'if [[ ! -e $${GO_WORKSPACE}/bazel-out ]]; then ln -s $$(pwd)/bazel-out/ $${GO_WORKSPACE}/; fi',
       # setup genfile GOPATH
-      'export GENGOPATH=/tmp/gengopath',
+      'export GENGOPATH=$${GENRULE_TMPDIR}/gengopath',
       'export GENGO_WORKSPACE=$${GENGOPATH}/src/' + ctx.attr.go_prefix.go_prefix,
       'mkdir -p $${GENGO_WORKSPACE%/*}',
       'ln -s $$(pwd)/$(GENDIR) $${GENGO_WORKSPACE}',

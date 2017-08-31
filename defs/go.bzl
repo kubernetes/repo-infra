@@ -1,5 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "GoSource")
-load("@io_bazel_rules_go//go/private:common.bzl", "get_go_toolchain")
+load("@io_bazel_rules_go//go:def.bzl", "GoLibrary")
 
 go_filetype = ["*.go"]
 
@@ -13,7 +12,7 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
   return variables
 
 def _go_sources_aspect_impl(target, ctx):
-  transitive_sources = set(target[GoSource].go_sources)
+  transitive_sources = set(target[GoLibrary].srcs)
   for dep in ctx.rule.attr.deps:
     transitive_sources = transitive_sources | dep.transitive_sources
   return struct(transitive_sources = transitive_sources)
@@ -62,8 +61,8 @@ def _compute_genrule_command(ctx):
   return '\n'.join(cmd)
 
 def _go_genrule_impl(ctx):
-  go_toolchain = get_go_toolchain(ctx)
-  all_srcs = set(go_toolchain.stdlib)
+  go_toolchain = ctx.toolchains["@io_bazel_rules_go//go:toolchain"]
+  all_srcs = set(go_toolchain.data.stdlib)
   label_dict = {}
 
   for dep in ctx.attr.go_deps:
@@ -111,12 +110,9 @@ go_genrule = rule(
         ),
         "message": attr.string(),
         "executable": attr.bool(default = False),
-        # Next two rules copied from bazelbuild/rules_go@a9df110cf04e167b33f10473c7e904d780d921e6
+        # Next rule copied from bazelbuild/rules_go@a9df110cf04e167b33f10473c7e904d780d921e6
         # and then modified a bit.
-        # These will likely break at some point in the future, pending Bazel toolchain changes.
-        "_go_toolchain": attr.label(
-            default = Label("@io_bazel_rules_go_toolchain//:go_toolchain"),
-        ),
+        # I'm not sure if this is correct anymore.
         "go_prefix": attr.label(
             providers = ["go_prefix"],
             default = Label(
@@ -128,5 +124,6 @@ go_genrule = rule(
         ),
     },
     output_to_genfiles = True,
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
     implementation = _go_genrule_impl,
 )

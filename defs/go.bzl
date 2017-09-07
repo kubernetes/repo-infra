@@ -12,7 +12,7 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
   return variables
 
 def _go_sources_aspect_impl(target, ctx):
-  transitive_sources = set(target[GoLibrary].srcs)
+  transitive_sources = depset(target[GoLibrary].srcs)
   for dep in ctx.rule.attr.deps:
     transitive_sources = transitive_sources | dep.transitive_sources
   return struct(transitive_sources = transitive_sources)
@@ -62,7 +62,7 @@ def _compute_genrule_command(ctx):
 
 def _go_genrule_impl(ctx):
   go_toolchain = ctx.toolchains["@io_bazel_rules_go//go:toolchain"]
-  all_srcs = set(go_toolchain.data.stdlib)
+  all_srcs = depset(go_toolchain.data.stdlib)
   label_dict = {}
 
   for dep in ctx.attr.go_deps:
@@ -78,7 +78,7 @@ def _go_genrule_impl(ctx):
       command=cmd,
       attribute="cmd",
       expand_locations=True,
-      make_variables=_compute_genrule_variables(all_srcs, set(ctx.outputs.outs)),
+      make_variables=_compute_genrule_variables(all_srcs, depset(ctx.outputs.outs)),
       tools=ctx.attr.tools,
       label_dict=label_dict
   )

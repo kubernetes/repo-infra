@@ -22,7 +22,7 @@ def deb_data(name, data = []):
     deps += [dname]
     pkg_tar(
         name = dname,
-        files = info["files"],
+        srcs = info["files"],
         mode = info["mode"],
         package_dir = info["dir"],
     )

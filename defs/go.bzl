@@ -1,5 +1,4 @@
-load("@io_bazel_rules_go//go:def.bzl", "GoSource")
-load("@io_bazel_rules_go//go/private:common.bzl", "get_go_toolchain")
+load("@io_bazel_rules_go//go:def.bzl", "GoLibrary")
 
 go_filetype = ["*.go"]
 
@@ -11,17 +10,6 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
   if len(resolved_outs) == 1:
     variables["@"] = list(resolved_outs)[0].path
   return variables
-
-def _go_sources_aspect_impl(target, ctx):
-  transitive_sources = set(target[GoSource].go_sources)
-  for dep in ctx.rule.attr.deps:
-    transitive_sources = transitive_sources | dep.transitive_sources
-  return struct(transitive_sources = transitive_sources)
-
-go_sources_aspect = aspect(
-    attr_aspects = ["deps"],
-    implementation = _go_sources_aspect_impl,
-)
 
 def _compute_genrule_command(ctx):
   workspace_root = '$$(pwd)'
@@ -62,15 +50,18 @@ def _compute_genrule_command(ctx):
   return '\n'.join(cmd)
 
 def _go_genrule_impl(ctx):
-  go_toolchain = get_go_toolchain(ctx)
-  all_srcs = set(go_toolchain.stdlib)
+  go_toolchain = ctx.toolchains["@io_bazel_rules_go//go:toolchain"]
+  all_srcs = depset(go_toolchain.data.stdlib)
   label_dict = {}
 
   for dep in ctx.attr.go_deps:
-    all_srcs = all_srcs | dep.transitive_sources
+    lib = dep[GoLibrary]
+    all_srcs += lib.srcs
+    for transitive_lib in lib.transitive:
+      all_srcs += transitive_lib.srcs
 
   for dep in ctx.attr.srcs:
-    all_srcs = all_srcs | dep.files
+    all_srcs += dep.files
     label_dict[dep.label] = dep.files
 
   cmd = _compute_genrule_command(ctx)
@@ -79,7 +70,7 @@ def _go_genrule_impl(ctx):
       command=cmd,
       attribute="cmd",
       expand_locations=True,
-      make_variables=_compute_genrule_variables(all_srcs, set(ctx.outputs.outs)),
+      make_variables=_compute_genrule_variables(all_srcs, depset(ctx.outputs.outs)),
       tools=ctx.attr.tools,
       label_dict=label_dict
   )
@@ -106,17 +97,12 @@ go_genrule = rule(
         ),
         "outs": attr.output_list(mandatory = True),
         "cmd": attr.string(mandatory = True),
-        "go_deps": attr.label_list(
-            aspects = [go_sources_aspect],
-        ),
+        "go_deps": attr.label_list(),
         "message": attr.string(),
         "executable": attr.bool(default = False),
-        # Next two rules copied from bazelbuild/rules_go@a9df110cf04e167b33f10473c7e904d780d921e6
+        # Next rule copied from bazelbuild/rules_go@a9df110cf04e167b33f10473c7e904d780d921e6
         # and then modified a bit.
-        # These will likely break at some point in the future, pending Bazel toolchain changes.
-        "_go_toolchain": attr.label(
-            default = Label("@io_bazel_rules_go_toolchain//:go_toolchain"),
-        ),
+        # I'm not sure if this is correct anymore.
         "go_prefix": attr.label(
             providers = ["go_prefix"],
             default = Label(
@@ -128,5 +114,6 @@ go_genrule = rule(
         ),
     },
     output_to_genfiles = True,
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
     implementation = _go_genrule_impl,
 )

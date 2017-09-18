@@ -11,17 +11,6 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
     variables["@"] = list(resolved_outs)[0].path
   return variables
 
-def _go_sources_aspect_impl(target, ctx):
-  transitive_sources = depset(target[GoLibrary].srcs)
-  for dep in ctx.rule.attr.deps:
-    transitive_sources = transitive_sources | dep.transitive_sources
-  return struct(transitive_sources = transitive_sources)
-
-go_sources_aspect = aspect(
-    attr_aspects = ["deps"],
-    implementation = _go_sources_aspect_impl,
-)
-
 def _compute_genrule_command(ctx):
   workspace_root = '$$(pwd)'
   if ctx.build_file_path.startswith('external/'):
@@ -66,10 +55,13 @@ def _go_genrule_impl(ctx):
   label_dict = {}
 
   for dep in ctx.attr.go_deps:
-    all_srcs = all_srcs | dep.transitive_sources
+    lib = dep[GoLibrary]
+    all_srcs += lib.srcs
+    for transitive_lib in lib.transitive:
+      all_srcs += transitive_lib.srcs
 
   for dep in ctx.attr.srcs:
-    all_srcs = all_srcs | dep.files
+    all_srcs += dep.files
     label_dict[dep.label] = dep.files
 
   cmd = _compute_genrule_command(ctx)
@@ -105,9 +97,7 @@ go_genrule = rule(
         ),
         "outs": attr.output_list(mandatory = True),
         "cmd": attr.string(mandatory = True),
-        "go_deps": attr.label_list(
-            aspects = [go_sources_aspect],
-        ),
+        "go_deps": attr.label_list(),
         "message": attr.string(),
         "executable": attr.bool(default = False),
         # Next rule copied from bazelbuild/rules_go@a9df110cf04e167b33f10473c7e904d780d921e6

@@ -25,7 +25,7 @@ go_library(
     ],
     tags = ["automanaged"],
     deps = [
-        "//vendor:github.com/bazelbuild/buildifier/core",
-        "//vendor:github.com/golang/glog",
+        "//vendor/github.com/bazelbuild/buildifier/core:go_default_library",
+        "//vendor/github.com/golang/glog:go_default_library",
     ],
 )

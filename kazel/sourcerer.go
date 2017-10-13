@@ -34,6 +34,39 @@ func (v *Vendorer) walkSource(pkgPath string) error {
 	return err
 }
 
+// A sourceVisitor takes a package path and a list of child targets and returns
+// a list of bazel rules to add and a string describing the target that should
+// be used by a parent rule.
+type sourceVisitor func(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string)
+
+// This visitor generates the package-srcs and all-srcs targets.
+func allSrcsVisitor(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string) {
+	pkgSrcsExpr := &bzl.LiteralExpr{Token: `glob(["**"])`}
+	if pkgPath == "." {
+		pkgSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**"], exclude=["bazel-*/**", ".git/**"])`}
+	}
+
+	rules = []*bzl.Rule{
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return pkgSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs":       pkgSrcsExpr,
+				"visibility": asExpr([]string{"//visibility:private"}),
+			}),
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return allSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs": asExpr(append(childTargets, fmt.Sprintf(":%s", pkgSrcsTarget))),
+				// TODO: should this be more restricted?
+				"visibility": asExpr([]string{"//visibility:public"}),
+			}),
+	}
+
+	selfTarget = fmt.Sprintf("//%s:%s", pkgPath, allSrcsTarget)
+
+	return
+}
+
 // walkSourceHelper walks the source tree recursively from pkgPath, adding
 // any BUILD files to v.newRules to be formatted.
 //
@@ -90,25 +123,8 @@ func (v *Vendorer) walkSourceHelper(pkgPath string) ([]string, error) {
 		return nil, nil
 	}
 
-	pkgSrcsExpr := &bzl.LiteralExpr{Token: `glob(["**"])`}
-	if pkgPath == "." {
-		pkgSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**"], exclude=["bazel-*/**", ".git/**"])`}
-	}
+	rules, selfTarget := allSrcsVisitor(pkgPath, children)
+	v.addRules(pkgPath, rules)
 
-	v.addRules(pkgPath, []*bzl.Rule{
-		newRule(RuleTypeFileGroup,
-			func(_ ruleType) string { return pkgSrcsTarget },
-			map[string]bzl.Expr{
-				"srcs":       pkgSrcsExpr,
-				"visibility": asExpr([]string{"//visibility:private"}),
-			}),
-		newRule(RuleTypeFileGroup,
-			func(_ ruleType) string { return allSrcsTarget },
-			map[string]bzl.Expr{
-				"srcs": asExpr(append(children, fmt.Sprintf(":%s", pkgSrcsTarget))),
-				// TODO: should this be more restricted?
-				"visibility": asExpr([]string{"//visibility:public"}),
-			}),
-	})
-	return []string{fmt.Sprintf("//%s:%s", pkgPath, allSrcsTarget)}, nil
+	return []string{selfTarget}, nil
 }

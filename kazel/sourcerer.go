@@ -29,7 +29,12 @@ const (
 	allSrcsTarget = "all-srcs"
 )
 
-// walkSource walks the source tree recursively from pkgPath, adding
+func (v *Vendorer) walkSource(pkgPath string) error {
+	_, err := v.walkSourceHelper(pkgPath)
+	return err
+}
+
+// walkSourceHelper walks the source tree recursively from pkgPath, adding
 // any BUILD files to v.newRules to be formatted.
 //
 // If AddSourcesRules is enabled in the kazel config, then we additionally add
@@ -37,7 +42,7 @@ const (
 //
 // Returns the list of children all-srcs targets that should be added to the
 // all-srcs rule of the enclosing package.
-func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
+func (v *Vendorer) walkSourceHelper(pkgPath string) ([]string, error) {
 	// clean pkgPath since we access v.newRules directly
 	pkgPath = filepath.Clean(pkgPath)
 	for _, r := range v.skippedPaths {
@@ -54,7 +59,7 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 	var children []string
 	for _, f := range files {
 		if f.IsDir() {
-			c, err := v.walkSource(filepath.Join(pkgPath, f.Name()))
+			c, err := v.walkSourceHelper(filepath.Join(pkgPath, f.Name()))
 			if err != nil {
 				return nil, err
 			}

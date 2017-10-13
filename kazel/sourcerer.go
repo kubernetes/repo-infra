@@ -29,9 +29,16 @@ const (
 	allSrcsTarget = "all-srcs"
 )
 
+var allVisitors []sourceVisitor = []sourceVisitor{allSrcsVisitor}
+
 func (v *Vendorer) walkSource(pkgPath string) error {
-	_, err := v.walkSourceHelper(pkgPath)
-	return err
+	for _, visitor := range allVisitors {
+		_, err := v.walkSourceHelper(pkgPath, visitor)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // A sourceVisitor takes a package path and a list of child targets and returns
@@ -75,7 +82,7 @@ func allSrcsVisitor(pkgPath string, childTargets []string) (rules []*bzl.Rule, s
 //
 // Returns the list of children all-srcs targets that should be added to the
 // all-srcs rule of the enclosing package.
-func (v *Vendorer) walkSourceHelper(pkgPath string) ([]string, error) {
+func (v *Vendorer) walkSourceHelper(pkgPath string, visitor sourceVisitor) ([]string, error) {
 	// clean pkgPath since we access v.newRules directly
 	pkgPath = filepath.Clean(pkgPath)
 	for _, r := range v.skippedPaths {
@@ -92,7 +99,7 @@ func (v *Vendorer) walkSourceHelper(pkgPath string) ([]string, error) {
 	var children []string
 	for _, f := range files {
 		if f.IsDir() {
-			c, err := v.walkSourceHelper(filepath.Join(pkgPath, f.Name()))
+			c, err := v.walkSourceHelper(filepath.Join(pkgPath, f.Name()), visitor)
 			if err != nil {
 				return nil, err
 			}
@@ -123,7 +130,7 @@ func (v *Vendorer) walkSourceHelper(pkgPath string) ([]string, error) {
 		return nil, nil
 	}
 
-	rules, selfTarget := allSrcsVisitor(pkgPath, children)
+	rules, selfTarget := visitor(pkgPath, children)
 	v.addRules(pkgPath, rules)
 
 	return []string{selfTarget}, nil

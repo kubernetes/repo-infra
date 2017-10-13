@@ -25,12 +25,20 @@ import (
 )
 
 const (
-	pkgSrcsTarget = "package-srcs"
-	allSrcsTarget = "all-srcs"
+	pkgSrcsTarget   = "package-srcs"
+	allSrcsTarget   = "all-srcs"
+	pkgGoSrcsTarget = "package-go-srcs"
+	allGoSrcsTarget = "all-go-srcs"
 )
 
-var allVisitors []sourceVisitor = []sourceVisitor{allSrcsVisitor}
+var allVisitors []sourceVisitor = []sourceVisitor{allSrcsVisitor, allGoSrcsVisitor}
 
+// walkSource walks the source tree recursively from pkgPath, adding
+// any BUILD files to v.newRules to be formatted.
+//
+// If AddSourcesRules is enabled in the kazel config, then we additionally add
+// package-sources and recursive all-srcs (and the go analogs) filegroups rules
+// to every BUILD file.
 func (v *Vendorer) walkSource(pkgPath string) error {
 	for _, visitor := range allVisitors {
 		_, err := v.walkSourceHelper(pkgPath, visitor)
@@ -45,6 +53,34 @@ func (v *Vendorer) walkSource(pkgPath string) error {
 // a list of bazel rules to add and a string describing the target that should
 // be used by a parent rule.
 type sourceVisitor func(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string)
+
+// This visitor generates the package-go-srcs and all-go-srcs targets.
+func allGoSrcsVisitor(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string) {
+	pkgSrcsExpr := &bzl.LiteralExpr{Token: `glob(["**/*.go"])`}
+	if pkgPath == "." {
+		pkgSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**/*.go"], exclude=["bazel-*/**", ".git/**"])`}
+	}
+
+	rules = []*bzl.Rule{
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return pkgGoSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs":       pkgSrcsExpr,
+				"visibility": asExpr([]string{"//visibility:private"}),
+			}),
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return allGoSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs": asExpr(append(childTargets, fmt.Sprintf(":%s", pkgGoSrcsTarget))),
+				// TODO: should this be more restricted?
+				"visibility": asExpr([]string{"//visibility:public"}),
+			}),
+	}
+
+	selfTarget = fmt.Sprintf("//%s:%s", pkgPath, allGoSrcsTarget)
+
+	return
+}
 
 // This visitor generates the package-srcs and all-srcs targets.
 func allSrcsVisitor(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string) {
@@ -78,7 +114,7 @@ func allSrcsVisitor(pkgPath string, childTargets []string) (rules []*bzl.Rule, s
 // any BUILD files to v.newRules to be formatted.
 //
 // If AddSourcesRules is enabled in the kazel config, then we additionally add
-// package-sources and recursive all-srcs filegroups rules to every BUILD file.
+// the rules found by `visitor`.
 //
 // Returns the list of children all-srcs targets that should be added to the
 // all-srcs rule of the enclosing package.

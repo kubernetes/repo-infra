@@ -78,7 +78,11 @@ def _go_genrule_impl(ctx):
   ctx.action(
       inputs = list(all_srcs) + resolved_inputs,
       outputs = ctx.outputs.outs,
-      env = ctx.configuration.default_shell_env + go_toolchain.env,
+      env = ctx.configuration.default_shell_env + {
+          "GOROOT": go_toolchain.stdlib.root.path,
+          "GOOS": go_toolchain.stdlib.goos,
+          "GOARCH": go_toolchain.stdlib.goarch,
+          },
       command = argv,
       progress_message = "%s %s" % (ctx.attr.message, ctx),
       mnemonic = "GoGenrule",

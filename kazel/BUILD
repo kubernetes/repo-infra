@@ -10,6 +10,7 @@ load(
 
 go_binary(
     name = "kazel",
+    importpath = "k8s.io/repo-infra/kazel",
     library = ":go_default_library",
     tags = ["automanaged"],
 )
@@ -23,6 +24,7 @@ go_library(
         "kazel.go",
         "sourcerer.go",
     ],
+    importpath = "k8s.io/repo-infra/kazel",
     tags = ["automanaged"],
     deps = [
         "//vendor/github.com/bazelbuild/buildifier/core:go_default_library",

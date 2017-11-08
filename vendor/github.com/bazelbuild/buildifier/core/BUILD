@@ -13,5 +13,6 @@ go_library(
         "tables.go",
         "walk.go",
     ],
+    importpath = "github.com/bazelbuild/buildifier/core",
     visibility = ["//visibility:public"],
 )

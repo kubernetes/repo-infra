@@ -51,7 +51,7 @@ def _compute_genrule_command(ctx):
 
 def _go_genrule_impl(ctx):
   go_toolchain = ctx.toolchains["@io_bazel_rules_go//go:toolchain"]
-  all_srcs = depset(go_toolchain.data.stdlib)
+  all_srcs = depset(go_toolchain.stdlib)
   label_dict = {}
 
   for dep in ctx.attr.go_deps:

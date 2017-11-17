@@ -10,6 +10,6 @@ go_library(
 go_test(
     name = "go_default_test",
     srcs = ["pargzip_test.go"],
+    embed = [":go_default_library"],
     importpath = "golang.org/x/build/pargzip",
-    library = ":go_default_library",
 )

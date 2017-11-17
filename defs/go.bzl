@@ -1,4 +1,5 @@
 load("@io_bazel_rules_go//go:def.bzl", "GoLibrary")
+load("@io_bazel_rules_go//go/private:mode.bzl", "get_mode")
 
 go_filetype = ["*.go"]
 
@@ -54,7 +55,8 @@ def _compute_genrule_command(ctx, go_stdlib):
 
 def _go_genrule_impl(ctx):
   go_toolchain = ctx.toolchains["@io_bazel_rules_go//go:toolchain"]
-  go_stdlib = go_toolchain.stdlib.get(ctx, go_toolchain)
+  mode = get_mode(ctx, ctx.attr._go_toolchain_flags)
+  go_stdlib = go_toolchain.stdlib.get(ctx, go_toolchain, mode)
 
   all_srcs = depset(go_stdlib.files)
   label_dict = {}

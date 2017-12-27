@@ -99,6 +99,10 @@ func walk1(v *Expr, stack *[]Expr, f func(x Expr, stk []Expr) Expr) Expr {
 		for i := range v.List {
 			walk1(&v.List[i], stack, f)
 		}
+	case *SetExpr:
+		for i := range v.List {
+			walk1(&v.List[i], stack, f)
+		}
 	case *TupleExpr:
 		for i := range v.List {
 			walk1(&v.List[i], stack, f)
@@ -110,13 +114,13 @@ func walk1(v *Expr, stack *[]Expr, f func(x Expr, stk []Expr) Expr) Expr {
 	case *ListForExpr:
 		walk1(&v.X, stack, f)
 		for _, c := range v.For {
-			for j := range c.Var {
-				walk1(&c.Var[j], stack, f)
+			for j := range c.For.Var {
+				walk1(&c.For.Var[j], stack, f)
 			}
-			walk1(&c.Expr, stack, f)
-		}
-		for _, c := range v.If {
-			walk1(&c.Cond, stack, f)
+			walk1(&c.For.Expr, stack, f)
+			for _, i := range c.Ifs {
+				walk1(&i.Cond, stack, f)
+			}
 		}
 	case *ConditionalExpr:
 		walk1(&v.Then, stack, f)

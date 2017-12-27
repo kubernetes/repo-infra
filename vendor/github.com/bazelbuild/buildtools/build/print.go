@@ -404,6 +404,9 @@ func (p *printer) expr(v Expr, outerPrec int) {
 	case *ListExpr:
 		p.seq("[]", v.List, &v.End, modeList, false, v.ForceMultiLine)
 
+	case *SetExpr:
+		p.seq("{}", v.List, &v.End, modeList, false, v.ForceMultiLine)
+
 	case *TupleExpr:
 		p.seq("()", v.List, &v.End, modeTuple, v.ForceCompact, v.ForceMultiLine)
 
@@ -573,20 +576,24 @@ func (p *printer) listFor(v *ListForExpr) {
 	for _, c := range v.For {
 		space()
 		p.printf("for ")
-		for i, name := range c.Var {
+		for i, name := range c.For.Var {
 			if i > 0 {
 				p.printf(", ")
 			}
 			p.expr(name, precLow)
 		}
 		p.printf(" in ")
-		p.expr(c.Expr, precLow)
-	}
+		p.expr(c.For.Expr, precLow)
+		p.comment = append(p.comment, c.For.Comment().Suffix...)
 
-	for _, c := range v.If {
-		space()
-		p.printf("if ")
-		p.expr(c.Cond, precLow)
+		for _, i := range c.Ifs {
+			space()
+			p.printf("if ")
+			p.expr(i.Cond, precLow)
+			p.comment = append(p.comment, i.Comment().Suffix...)
+		}
+		p.comment = append(p.comment, c.Comment().Suffix...)
+
 	}
 
 	if multiLine {

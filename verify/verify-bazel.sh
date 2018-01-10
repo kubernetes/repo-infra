@@ -32,7 +32,6 @@ touch "${REPOINFRA_ROOT}/vendor/BUILD"
 gazelle_diff=$("${TMP_GOPATH}/bin/gazelle" fix \
   -build_file_name=BUILD,BUILD.bazel \
   -external=vendored \
-  -proto=legacy \
   -mode=diff \
   -repo_root="${REPOINFRA_ROOT}")
 

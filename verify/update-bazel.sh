@@ -44,7 +44,6 @@ touch "${REPOINFRA_ROOT}/vendor/BUILD"
 "${TMP_GOPATH}/bin/gazelle" fix \
   -build_file_name=BUILD,BUILD.bazel \
   -external=vendored \
-  -proto=legacy \
   -mode=fix \
   -repo_root="${REPOINFRA_ROOT}"
 

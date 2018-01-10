@@ -18,9 +18,12 @@ distributed under the License is distributed on an "AS IS" BASIS,
 package build
 
 import (
+	"path"
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/bazelbuild/buildtools/tables"
 )
 
 // For debugging: flag to disable certain rewrites.
@@ -158,8 +161,9 @@ func keepSorted(x Expr) bool {
 // First, it joins labels written as string addition, turning
 // "//x" + ":y" (usually split across multiple lines) into "//x:y".
 //
-// Second, it removes redundant target qualifiers, turning
-// "//third_party/m4:m4" into "//third_party/m4".
+// Second, it removes redundant target qualifiers, turning labels like
+// "//third_party/m4:m4" into "//third_party/m4" as well as ones like
+// "@foo//:foo" into "@foo".
 //
 func fixLabels(f *File, info *RewriteInfo) {
 	joinLabel := func(p *Expr) {
@@ -192,22 +196,52 @@ func fixLabels(f *File, info *RewriteInfo) {
 		*p = str1
 	}
 
-	// labelRE matches label strings //x/y/z:abc.
-	// $1 is //x/y/z, $2 is x/y/, $3 is z, $4 is :abc, and $5 is abc.
-	labelRE := regexp.MustCompile(`^(//(.*/)?([^:]+))(:([^:]+))?$`)
+	labelPrefix := "//"
+	if tables.StripLabelLeadingSlashes {
+		labelPrefix = ""
+	}
+	// labelRE matches label strings, e.g. @r//x/y/z:abc
+	// where $1 is @r//x/y/z, $2 is @r//, $3 is r, $4 is z, $5 is abc.
+	labelRE := regexp.MustCompile(`^(((?:@(\w+))?//|` + labelPrefix + `)(?:.+/)?([^:]*))(?::([^:]+))?$`)
 
 	shortenLabel := func(v Expr) {
 		str, ok := v.(*StringExpr)
 		if !ok {
 			return
 		}
+		editPerformed := false
+
+		if tables.StripLabelLeadingSlashes && strings.HasPrefix(str.Value, "//") {
+			if path.Dir(f.Path) == "." || !strings.HasPrefix(str.Value, "//:") {
+				editPerformed = true
+				str.Value = str.Value[2:]
+			}
+		}
+
+		if tables.ShortenAbsoluteLabelsToRelative {
+			thisPackage := labelPrefix + path.Dir(f.Path)
+			if str.Value == thisPackage {
+				editPerformed = true
+				str.Value = ":" + path.Base(str.Value)
+			} else if strings.HasPrefix(str.Value, thisPackage+":") {
+				editPerformed = true
+				str.Value = str.Value[len(thisPackage):]
+			}
+		}
+
 		m := labelRE.FindStringSubmatch(str.Value)
 		if m == nil {
 			return
 		}
-		if m[3] == m[5] {
-			info.EditLabel++
+		if m[4] != "" && m[4] == m[5] { // e.g. //foo:foo
+			editPerformed = true
 			str.Value = m[1]
+		} else if m[3] != "" && m[4] == "" && m[3] == m[5] { // e.g. @foo//:foo
+			editPerformed = true
+			str.Value = "@" + m[3]
+		}
+		if editPerformed {
+			info.EditLabel++
 		}
 	}
 
@@ -226,7 +260,7 @@ func fixLabels(f *File, info *RewriteInfo) {
 					continue
 				}
 				key, ok := as.X.(*LiteralExpr)
-				if !ok || !isLabelArg[key.Token] || labelBlacklist[callName(v)+"."+key.Token] {
+				if !ok || !tables.IsLabelArg[key.Token] || tables.LabelBlacklist[callName(v)+"."+key.Token] {
 					continue
 				}
 				if leaveAlone1(as.Y) {
@@ -239,6 +273,15 @@ func fixLabels(f *File, info *RewriteInfo) {
 						}
 						joinLabel(&list.List[i])
 						shortenLabel(list.List[i])
+					}
+				}
+				if set, ok := as.Y.(*SetExpr); ok {
+					for i := range set.List {
+						if leaveAlone1(set.List[i]) {
+							continue
+						}
+						joinLabel(&set.List[i])
+						shortenLabel(set.List[i])
 					}
 				} else {
 					joinLabel(&as.Y)
@@ -303,11 +346,15 @@ func sortCallArgs(f *File, info *RewriteInfo) {
 // It could use the auto-generated per-rule tables but for now it just
 // falls back to the original list.
 func ruleNamePriority(rule, arg string) int {
-	return namePriority[arg]
+	ruleArg := rule + "." + arg
+	if val, ok := tables.NamePriority[ruleArg]; ok {
+		return val
+	}
+	return tables.NamePriority[arg]
 	/*
 		list := ruleArgOrder[rule]
 		if len(list) == 0 {
-			return namePriority[arg]
+			return tables.NamePriority[arg]
 		}
 		for i, x := range list {
 			if x == arg {
@@ -316,39 +363,6 @@ func ruleNamePriority(rule, arg string) int {
 		}
 		return len(list)
 	*/
-}
-
-// namePriority maps an argument name to its sorting priority.
-//
-// NOTE(bazel-team): These are the old buildifier rules. It is likely that this table
-// will change, perhaps swapping in a separate table for each call,
-// derived from the order used in the Build Encyclopedia.
-var namePriority = map[string]int{
-	"name":              -99,
-	"gwt_name":          -98,
-	"package_name":      -97,
-	"visible_node_name": -96, // for boq_initial_css_modules and boq_jswire_test_suite
-	"size":              -95,
-	"timeout":           -94,
-	"testonly":          -93,
-	"src":               -92,
-	"srcdir":            -91,
-	"srcs":              -90,
-	"out":               -89,
-	"outs":              -88,
-	"hdrs":              -87,
-	"has_services":      -86, // before api versions, for proto
-	"include":           -85, // before exclude, for glob
-	"of":                -84, // for check_dependencies
-	"baseline":          -83, // for searchbox_library
-	// All others sort here, at 0.
-	"destdir":        1,
-	"exports":        2,
-	"runtime_deps":   3,
-	"deps":           4,
-	"implementation": 5,
-	"implements":     6,
-	"alwayslink":     7,
 }
 
 // If x is of the form key=value, argName returns the string key.
@@ -411,10 +425,10 @@ func sortStringLists(f *File, info *RewriteInfo) {
 					continue
 				}
 				context := rule + "." + key.Token
-				if !isSortableListArg[key.Token] || sortableBlacklist[context] {
+				if !tables.IsSortableListArg[key.Token] || tables.SortableBlacklist[context] {
 					continue
 				}
-				if disabled("unsafesort") && !sortableWhitelist[context] && !allowedSort(context) {
+				if disabled("unsafesort") && !tables.SortableWhitelist[context] && !allowedSort(context) {
 					continue
 				}
 				sortStringList(as.Y, info, context)
@@ -496,7 +510,7 @@ func sortStringList(x Expr, info *RewriteInfo, context string) {
 		if !sort.IsSorted(byStringExpr(chunk)) || !isUniq(chunk) {
 			if info != nil {
 				info.SortStringList++
-				if !sortableWhitelist[context] {
+				if !tables.SortableWhitelist[context] {
 					info.UnsafeSort++
 					info.Log = append(info.Log, "sort:"+context)
 				}
@@ -586,7 +600,7 @@ func makeSortKey(index int, x *StringExpr) stringSortKey {
 	switch {
 	case strings.HasPrefix(x.Value, ":"):
 		key.phase = 1
-	case strings.HasPrefix(x.Value, "//"):
+	case strings.HasPrefix(x.Value, "//") || (tables.StripLabelLeadingSlashes && !strings.HasPrefix(x.Value, "@")):
 		key.phase = 2
 	case strings.HasPrefix(x.Value, "@"):
 		key.phase = 3

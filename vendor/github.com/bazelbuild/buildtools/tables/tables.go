@@ -17,13 +17,13 @@ distributed under the License is distributed on an "AS IS" BASIS,
 // Perhaps eventually this will be
 // derived from the BUILD encyclopedia.
 
-package build
+package tables
 
-// A named argument to a rule call is considered to have a value
+// IsLabelArg: a named argument to a rule call is considered to have a value
 // that can be treated as a label or list of labels if the name
 // is one of these names. There is a separate blacklist for
 // rule-specific exceptions.
-var isLabelArg = map[string]bool{
+var IsLabelArg = map[string]bool{
 	"app_target":         true,
 	"appdir":             true,
 	"base_package":       true,
@@ -89,18 +89,18 @@ var isLabelArg = map[string]bool{
 	"visibility":         true,
 }
 
-// labelBlacklist is the list of call arguments that cannot be
+// LabelBlacklist is the list of call arguments that cannot be
 // shortened, because they are not interpreted using the same
 // rules as for other labels.
-var labelBlacklist = map[string]bool{
+var LabelBlacklist = map[string]bool{
 	// Shortening this can cause visibility checks to fail.
 	"package_group.includes": true,
 }
 
-// A named argument to a rule call is considered to be a sortable list
+// IsSortableListArg: a named argument to a rule call is considered to be a sortable list
 // if the name is one of these names. There is a separate blacklist for
 // rule-specific exceptions.
-var isSortableListArg = map[string]bool{
+var IsSortableListArg = map[string]bool{
 	"cc_deps":             true,
 	"common_deps":         true,
 	"compile_deps":        true,
@@ -142,15 +142,15 @@ var isSortableListArg = map[string]bool{
 	"visibility":          true,
 }
 
-// sortableBlacklist records specific rule arguments that must not be reordered.
-var sortableBlacklist = map[string]bool{
+// SortableBlacklist records specific rule arguments that must not be reordered.
+var SortableBlacklist = map[string]bool{
 	"genrule.outs": true,
 	"genrule.srcs": true,
 }
 
-// sortableWhitelist records specific rule arguments that are guaranteed
+// SortableWhitelist records specific rule arguments that are guaranteed
 // to be reorderable, because bazel re-sorts the list itself after reading the BUILD file.
-var sortableWhitelist = map[string]bool{
+var SortableWhitelist = map[string]bool{
 	"cc_inc_library.hdrs":      true,
 	"cc_library.hdrs":          true,
 	"java_library.srcs":        true,
@@ -163,11 +163,75 @@ var sortableWhitelist = map[string]bool{
 	"java_import.constraints":  true,
 }
 
-// OverrideTables allows a user of the build package to override the special-case rules.
-func OverrideTables(labelArg, blacklist, sortableListArg, sortBlacklist, sortWhitelist map[string]bool) {
-	isLabelArg = labelArg
-	labelBlacklist = blacklist
-	isSortableListArg = sortableListArg
-	sortableBlacklist = sortBlacklist
-	sortableWhitelist = sortWhitelist
+// NamePriority maps an argument name to its sorting priority.
+//
+// NOTE(bazel-team): These are the old buildifier rules. It is likely that this table
+// will change, perhaps swapping in a separate table for each call,
+// derived from the order used in the Build Encyclopedia.
+var NamePriority = map[string]int{
+	"name":              -99,
+	"gwt_name":          -98,
+	"package_name":      -97,
+	"visible_node_name": -96, // for boq_initial_css_modules and boq_jswire_test_suite
+	"size":              -95,
+	"timeout":           -94,
+	"testonly":          -93,
+	"src":               -92,
+	"srcdir":            -91,
+	"srcs":              -90,
+	"out":               -89,
+	"outs":              -88,
+	"hdrs":              -87,
+	"has_services":      -86, // before api versions, for proto
+	"include":           -85, // before exclude, for glob
+	"of":                -84, // for check_dependencies
+	"baseline":          -83, // for searchbox_library
+	// All others sort here, at 0.
+	"destdir":        1,
+	"exports":        2,
+	"runtime_deps":   3,
+	"deps":           4,
+	"implementation": 5,
+	"implements":     6,
+	"alwayslink":     7,
+}
+
+var StripLabelLeadingSlashes = false
+
+var ShortenAbsoluteLabelsToRelative = false
+
+// OverrideTables allows a user of the build package to override the special-case rules. The user-provided tables replace the built-in tables.
+func OverrideTables(labelArg, blacklist, sortableListArg, sortBlacklist, sortWhitelist map[string]bool, namePriority map[string]int, stripLabelLeadingSlashes, shortenAbsoluteLabelsToRelative bool) {
+	IsLabelArg = labelArg
+	LabelBlacklist = blacklist
+	IsSortableListArg = sortableListArg
+	SortableBlacklist = sortBlacklist
+	SortableWhitelist = sortWhitelist
+	NamePriority = namePriority
+	StripLabelLeadingSlashes = stripLabelLeadingSlashes
+	ShortenAbsoluteLabelsToRelative = shortenAbsoluteLabelsToRelative
+}
+
+// MergeTables allows a user of the build package to override the special-case rules. The user-provided tables are merged into the built-in tables.
+func MergeTables(labelArg, blacklist, sortableListArg, sortBlacklist, sortWhitelist map[string]bool, namePriority map[string]int, stripLabelLeadingSlashes, shortenAbsoluteLabelsToRelative bool) {
+	for k, v := range labelArg {
+		IsLabelArg[k] = v
+	}
+	for k, v := range blacklist {
+		LabelBlacklist[k] = v
+	}
+	for k, v := range sortableListArg {
+		IsSortableListArg[k] = v
+	}
+	for k, v := range sortBlacklist {
+		SortableBlacklist[k] = v
+	}
+	for k, v := range sortWhitelist {
+		SortableWhitelist[k] = v
+	}
+	for k, v := range namePriority {
+		NamePriority[k] = v
+	}
+	StripLabelLeadingSlashes = stripLabelLeadingSlashes || StripLabelLeadingSlashes
+	ShortenAbsoluteLabelsToRelative = shortenAbsoluteLabelsToRelative || ShortenAbsoluteLabelsToRelative
 }

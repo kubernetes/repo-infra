@@ -1,5 +1,5 @@
-load("@io_bazel_rules_go//go:def.bzl", "GoLibrary")
-load("@io_bazel_rules_go//go/private:mode.bzl", "get_mode")
+load("@io_bazel_rules_go//go:def.bzl", "go_context")
+load("@io_bazel_rules_go//go/private:providers.bzl", "GoArchive")
 
 go_filetype = ["*.go"]
 
@@ -30,8 +30,8 @@ def _compute_genrule_command(ctx, go_stdlib):
   cmd = [
       'set -e',
       'export GOROOT=$$(pwd)/' + go_stdlib.root_file.dirname,
-      'export GOOS=' + go_stdlib.goos,
-      'export GOARCH=' + go_stdlib.goarch,
+      'export GOOS=' + go_stdlib.mode.goos,
+      'export GOARCH=' + go_stdlib.mode.goarch,
       # setup main GOPATH
       'GENRULE_TMPDIR=$$(mktemp -d $${TMPDIR:-/tmp}/bazel_%s_XXXXXXXX)' % ctx.attr.name,
       'export GOPATH=$${GENRULE_TMPDIR}/gopath',
@@ -54,24 +54,20 @@ def _compute_genrule_command(ctx, go_stdlib):
   return '\n'.join(cmd)
 
 def _go_genrule_impl(ctx):
-  go_toolchain = ctx.toolchains["@io_bazel_rules_go//go:toolchain"]
-  mode = get_mode(ctx, ctx.attr._go_toolchain_flags)
-  go_stdlib = go_toolchain.stdlib.get(ctx, go_toolchain, mode)
+  go = go_context(ctx)
 
-  all_srcs = depset(go_stdlib.files)
+  all_srcs = depset(go.stdlib.files)
   label_dict = {}
 
   for dep in ctx.attr.go_deps:
-    lib = dep[GoLibrary]
-    all_srcs += lib.package.srcs
-    for transitive_lib in lib.transitive:
-      all_srcs += transitive_lib.srcs
+    for archive in dep[GoArchive].transitive:
+      all_srcs += archive.srcs
 
   for dep in ctx.attr.srcs:
     all_srcs += dep.files
     label_dict[dep.label] = dep.files
 
-  cmd = _compute_genrule_command(ctx, go_stdlib)
+  cmd = _compute_genrule_command(ctx, go.stdlib)
 
   resolved_inputs, argv, runfiles_manifests = ctx.resolve_command(
       command=cmd,
@@ -107,7 +103,7 @@ go_genrule = rule(
         "go_deps": attr.label_list(),
         "message": attr.string(),
         "executable": attr.bool(default = False),
-        "_go_toolchain_flags": attr.label(default = Label("@io_bazel_rules_go//go/private:go_toolchain_flags")),
+        "_go_context_data": attr.label(default = Label("@io_bazel_rules_go//:go_context_data")),
         # Next rule copied from bazelbuild/rules_go@a9df110cf04e167b33f10473c7e904d780d921e6
         # and then modified a bit.
         # I'm not sure if this is correct anymore.

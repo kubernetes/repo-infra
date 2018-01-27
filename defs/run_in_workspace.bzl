@@ -81,9 +81,11 @@ def workspace_binary(
       name = script_name,
       cmd = cmd,
       root_file = root_file,
+      tags = ["manual"],
   )
   native.sh_binary(
       name = name,
       srcs = [":" + script_name],
       visibility = visibility,
+      tags = ["manual"],
   )

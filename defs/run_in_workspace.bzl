@@ -73,6 +73,7 @@ _workspace_binary_script = rule(
 def workspace_binary(
     name,
     cmd,
+    args = None,
     visibility = None,
     root_file = "//:WORKSPACE",
 ):
@@ -86,6 +87,7 @@ def workspace_binary(
   native.sh_binary(
       name = name,
       srcs = [":" + script_name],
+      args = args,
       visibility = visibility,
       tags = ["manual"],
   )

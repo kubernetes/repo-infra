@@ -24,14 +24,14 @@ set -o nounset
 set -o pipefail
 
 BASE=$(pwd)
-cd $(dirname $(readlink WORKSPACE))
+cd $(dirname $(readlink {root_file}))
 "$BASE/{cmd}" $@
-""".format(cmd=ctx.file.cmd.short_path)
+""".format(cmd=ctx.file.cmd.short_path, root_file=ctx.file.root_file.short_path)
 
     ctx.actions.write(output=ctx.outputs.executable, content=content, is_executable=True)
 
     runfiles = ctx.runfiles(
-        files = [ctx.file.cmd, ctx.file.workspace],
+        files = [ctx.file.cmd, ctx.file.root_file],
     )
     return [DefaultInfo(runfiles=runfiles)]
 
@@ -42,7 +42,7 @@ _workspace_binary_script = rule(
             allow_files = True,
             single_file = True,
         ),
-        "workspace": attr.label(
+        "root_file": attr.label(
             mandatory = True,
             allow_files = True,
             single_file = True,
@@ -62,12 +62,12 @@ _workspace_binary_script = rule(
 # )
 #
 # which would allow running dep with bazel run.
-def workspace_binary(name, cmd, visibility=None):
+def workspace_binary(name, cmd, visibility=None, root_file="//:WORKSPACE"):
     script_name = name + "_script"
     _workspace_binary_script(
-        name=script_name,
-        cmd=cmd,
-        workspace = "//:WORKSPACE",
+        name = script_name,
+        cmd = cmd,
+        root_file = root_file,
     )
     native.sh_binary(
         name = name,

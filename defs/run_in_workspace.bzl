@@ -18,22 +18,30 @@
 # Writes out a script which saves the runfiles directory,
 # changes to the workspace root, and then runs a command.
 def _workspace_binary_script_impl(ctx):
-    content = """#!/usr/bin/env bash
+  content = """#!/usr/bin/env bash
 set -o errexit
 set -o nounset
 set -o pipefail
 
 BASE=$(pwd)
-cd $(dirname $(readlink WORKSPACE))
+cd $(dirname $(readlink {root_file}))
 "$BASE/{cmd}" $@
-""".format(cmd=ctx.file.cmd.short_path)
-
-    ctx.actions.write(output=ctx.outputs.executable, content=content, is_executable=True)
-
-    runfiles = ctx.runfiles(
-        files = [ctx.file.cmd, ctx.file.workspace],
-    )
-    return [DefaultInfo(runfiles=runfiles)]
+""".format(
+      cmd = ctx.file.cmd.short_path,
+      root_file = ctx.file.root_file.short_path,
+  )
+  ctx.actions.write(
+      output = ctx.outputs.executable,
+      content = content,
+      is_executable = True,
+  )
+  runfiles = ctx.runfiles(
+      files = [
+          ctx.file.cmd,
+          ctx.file.root_file,
+      ],
+  )
+  return [DefaultInfo(runfiles = runfiles)]
 
 _workspace_binary_script = rule(
     attrs = {
@@ -42,7 +50,7 @@ _workspace_binary_script = rule(
             allow_files = True,
             single_file = True,
         ),
-        "workspace": attr.label(
+        "root_file": attr.label(
             mandatory = True,
             allow_files = True,
             single_file = True,
@@ -62,15 +70,24 @@ _workspace_binary_script = rule(
 # )
 #
 # which would allow running dep with bazel run.
-def workspace_binary(name, cmd, visibility=None):
-    script_name = name + "_script"
-    _workspace_binary_script(
-        name=script_name,
-        cmd=cmd,
-        workspace = "//:WORKSPACE",
-    )
-    native.sh_binary(
-        name = name,
-        srcs = [":" + script_name],
-        visibility = visibility,
-    )
+def workspace_binary(
+    name,
+    cmd,
+    args = None,
+    visibility = None,
+    root_file = "//:WORKSPACE",
+):
+  script_name = name + "_script"
+  _workspace_binary_script(
+      name = script_name,
+      cmd = cmd,
+      root_file = root_file,
+      tags = ["manual"],
+  )
+  native.sh_binary(
+      name = name,
+      srcs = [":" + script_name],
+      args = args,
+      visibility = visibility,
+      tags = ["manual"],
+  )

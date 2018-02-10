@@ -2,8 +2,6 @@ load("@io_bazel_rules_go//go:def.bzl", "go_context", "go_rule")
 load("@io_bazel_rules_go//go/private:providers.bzl", "GoArchive")
 load("@io_bazel_rules_go//go/private:rules/prefix.bzl", "go_prefix_default")
 
-go_filetype = ["*.go"]
-
 def _compute_genrule_variables(resolved_srcs, resolved_outs):
   variables = {"SRCS": cmd_helper.join_paths(" ", resolved_srcs),
                "OUTS": cmd_helper.join_paths(" ", resolved_outs)}

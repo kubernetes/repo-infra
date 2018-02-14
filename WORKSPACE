@@ -2,7 +2,7 @@ workspace(name = "io_kubernetes_build")
 
 git_repository(
     name = "io_bazel_rules_go",
-    commit = "fd3021297ae02a86c32adf2b52fd7fe77d033282",
+    commit = "59327146e5395cd1773bab0107d974f660cc0852",
     remote = "https://github.com/bazelbuild/rules_go.git",
 )
 

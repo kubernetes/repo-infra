@@ -21,20 +21,14 @@ REPOINFRA_ROOT=$(git rev-parse --show-toplevel)
 # https://github.com/kubernetes/test-infra/issues/5699#issuecomment-348350792
 cd ${REPOINFRA_ROOT}
 
-go install ./vendor/github.com/bazelbuild/bazel-gazelle/cmd/gazelle
-if ! which gazelle >/dev/null 2>&1; then
-    echo "Can't find gazelle - is your GOPATH's 'bin' in your PATH?" >/dev/stderr
-    echo "  GOPATH: ${GOPATH}" >/dev/stderr
-    echo "  PATH:   ${PATH}" >/dev/stderr
-    exit 1
-fi
-
-go install ./kazel
+OUTPUT_GOBIN="${REPOINFRA_ROOT}/_output/bin"
+GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/bazelbuild/bazel-gazelle/cmd/gazelle
+GOBIN="${OUTPUT_GOBIN}" go install ./kazel
 
 touch "${REPOINFRA_ROOT}/vendor/BUILD.bazel"
 
-gazelle fix \
+"${OUTPUT_GOBIN}/gazelle" fix \
   -external=vendored \
   -mode=fix
 
-kazel
+"${OUTPUT_GOBIN}/kazel"

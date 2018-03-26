@@ -31,10 +31,9 @@ fi
 
 go install ./kazel
 
-touch "${REPOINFRA_ROOT}/vendor/BUILD"
+touch "${REPOINFRA_ROOT}/vendor/BUILD.bazel"
 
 gazelle fix \
-  -build_file_name=BUILD,BUILD.bazel \
   -external=vendored \
   -mode=fix
 

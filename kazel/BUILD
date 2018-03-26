@@ -11,7 +11,6 @@ load(
 go_binary(
     name = "kazel",
     embed = [":go_default_library"],
-    importpath = "k8s.io/repo-infra/kazel",
     tags = ["automanaged"],
 )
 

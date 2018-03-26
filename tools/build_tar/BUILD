@@ -14,6 +14,5 @@ go_library(
 go_binary(
     name = "build_tar",
     embed = [":go_default_library"],
-    importpath = "k8s.io/repo-infra/tools/build_tar",
     visibility = ["//visibility:public"],
 )

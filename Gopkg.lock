@@ -41,6 +41,29 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/blakesmith/ar"
+  packages = ["."]
+  revision = "8bd4349a67f2533b078dbc524689d15dba0f4659"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/golang/glog"
+  packages = ["."]
+  revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+
+[[projects]]
+  name = "github.com/ulikunitz/xz"
+  packages = [
+    ".",
+    "internal/hash",
+    "internal/xlog",
+    "lzma"
+  ]
+  revision = "0c6b41e72360850ca4f98dc341fd999726ea007f"
+  version = "v0.5.4"
+
+[[projects]]
+  branch = "master"
   digest = "1:39b451c653a9512a341164753bdc936b929aa9691a2f0a44abd2cded2e88950c"
   name = "golang.org/x/build"
   packages = ["pargzip"]
@@ -66,6 +89,7 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
+  inputs-digest = "66c332e35ac00fc8835a1c51be4ed4a56ea79832e96c68f239930499149eb151"
   input-imports = [
     "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
     "github.com/bazelbuild/buildtools/build",

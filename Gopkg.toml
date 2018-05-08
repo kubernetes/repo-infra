@@ -28,3 +28,11 @@ required = [
   revision = "80c7f0d45d7e40fa1f7362852697d4a03df557b3"
 
 # END gazelle dependencies
+
+[[constraint]]
+  branch = "master"
+  name = "github.com/blakesmith/ar"
+
+[[constraint]]
+  name = "github.com/ulikunitz/xz"
+  version = "0.5.4"

@@ -17,18 +17,14 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
-)
 
-const (
-	openAPITagName = "openapi-gen"
-	staging        = "staging/src/"
+	bzl "github.com/bazelbuild/buildtools/build"
 )
 
 var (
@@ -36,101 +32,131 @@ var (
 	genTagRe = regexp.MustCompile(`//\s*\+k8s:([^\s=]+)(?:=(\S+))\s*\n`)
 )
 
-// walkGenerated updates the rule for kubernetes' OpenAPI generated file.
-// This involves reading all go files in the source tree and looking for the
-// "+k8s:openapi-gen" tag. If present, then that package must be supplied to
-// the genrule.
-func (v *Vendorer) walkGenerated() error {
-	if !v.cfg.K8sOpenAPIGen {
-		return nil
+// tag name -> (pkg -> values)
+type generatorTagsPkgMap map[string]map[string][]string
+
+// walkGenerated generates the k8s codegen bzl file.
+// This involves reading all non-test go sources in the tree and looking for
+// "+k8s:name=value" tags. Only those tags listed in K8sCodegenTags will be
+// included.
+func (v *Vendorer) walkGenerated() (bool, error) {
+	if v.cfg.K8sCodegenBzlFile == "" {
+		return false, nil
 	}
-	v.managedAttrs = append(v.managedAttrs, "openapi_targets", "vendor_targets")
-	paths, err := v.findOpenAPI(".")
+	// only include the specified tags
+	requestedTags := make(map[string]bool)
+	// tag name -> (pkg -> values)
+	tagsPkgsValues := make(generatorTagsPkgMap)
+	// tag name -> (tag value -> pkgs)
+	tagsValuesPkgs := make(generatorTagsPkgMap)
+	for _, tag := range v.cfg.K8sCodegenTags {
+		requestedTags[tag] = true
+	}
+	err := v.findGeneratorTags(".", requestedTags, tagsPkgsValues, tagsValuesPkgs)
 	if err != nil {
-		return err
+		return false, err
 	}
-	return v.addGeneratedOpenAPIRule(paths)
+
+	return v.createGeneratedBzlFile(tagsPkgsValues, tagsValuesPkgs)
 }
 
-// findOpenAPI searches for all packages under root that request OpenAPI. It
-// returns the go import paths. It does not follow symlinks.
-func (v *Vendorer) findOpenAPI(root string) ([]string, error) {
-	for _, r := range v.skippedOpenAPIPaths {
+// findGeneratorTags searches for all packages under root that include a kubernetes generator
+// tag comment. It does not follow symlinks, and any path in the configured skippedPaths is skipped.
+func (v *Vendorer) findGeneratorTags(root string, requestedTags map[string]bool, tagsPkgsValues, tagsValuesPkgs generatorTagsPkgMap) error {
+	for _, r := range v.skippedK8sCodegenPaths {
 		if r.MatchString(root) {
-			return nil, nil
+			return nil
 		}
 	}
 	finfos, err := ioutil.ReadDir(root)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	var res []string
-	var includeMe bool
+	// map tag name -> set of values
+	foundTags := make(map[string]map[string]bool)
 	for _, finfo := range finfos {
 		path := filepath.Join(root, finfo.Name())
 		if finfo.IsDir() && (finfo.Mode()&os.ModeSymlink == 0) {
-			children, err := v.findOpenAPI(path)
+			err := v.findGeneratorTags(path, requestedTags, tagsPkgsValues, tagsValuesPkgs)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			res = append(res, children...)
-		} else if strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, "_test.go") {
-			b, err := ioutil.ReadFile(path)
-			if err != nil {
-				return nil, err
-			}
-			matches := genTagRe.FindAllSubmatch(b, -1)
-			for _, m := range matches {
-				if len(m) >= 2 && string(m[1]) == openAPITagName {
-					includeMe = true
-					break
+			continue
+		}
+		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
+			continue
+		}
+
+		b, err := ioutil.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		matches := genTagRe.FindAllSubmatch(b, -1)
+		for _, m := range matches {
+			if len(m) >= 3 {
+				tag, values := string(m[1]), string(m[2])
+				if _, requested := requestedTags[tag]; !requested {
+					continue
+				}
+				if _, present := foundTags[tag]; !present {
+					foundTags[tag] = make(map[string]bool)
+				}
+				for _, v := range strings.Split(values, ",") {
+					foundTags[tag][v] = true
 				}
 			}
 		}
 	}
-	if includeMe {
-		pkg, err := v.ctx.ImportDir(filepath.Join(v.root, root), 0)
-		if err != nil {
-			return nil, err
-		}
-		res = append(res, pkg.ImportPath)
-	}
-	return res, nil
-}
 
-// addGeneratedOpenAPIRule updates the pkg/generated/openapi go_default_library
-// rule with the automanaged openapi_targets and vendor_targets.
-func (v *Vendorer) addGeneratedOpenAPIRule(paths []string) error {
-	var openAPITargets []string
-	var vendorTargets []string
-	baseImport := v.cfg.GoPrefix + "/"
-	for _, p := range paths {
-		if !strings.HasPrefix(p, baseImport) {
-			return fmt.Errorf("openapi-gen path outside of %s: %s", v.cfg.GoPrefix, p)
+	for tag, values := range foundTags {
+		if _, present := tagsPkgsValues[tag]; !present {
+			tagsPkgsValues[tag] = make(map[string][]string)
 		}
-		np := p[len(baseImport):]
-		if strings.HasPrefix(np, staging) {
-			vendorTargets = append(vendorTargets, np[len(staging):])
-		} else {
-			openAPITargets = append(openAPITargets, np)
+		if _, present := tagsValuesPkgs[tag]; !present {
+			tagsValuesPkgs[tag] = make(map[string][]string)
 		}
-	}
-	sort.Strings(openAPITargets)
-	sort.Strings(vendorTargets)
 
-	pkgPath := filepath.Join("pkg", "generated", "openapi")
-	// If we haven't walked this package yet, walk it so there is a go_library rule to modify
-	if len(v.newRules[pkgPath]) == 0 {
-		if err := v.updateSinglePkg(pkgPath); err != nil {
-			return err
+		for v := range values {
+			tagsPkgsValues[tag][root] = append(tagsPkgsValues[tag][root], v)
+			tagsValuesPkgs[tag][v] = append(tagsValuesPkgs[tag][v], root)
 		}
-	}
-	for _, r := range v.newRules[pkgPath] {
-		if r.Name() == "go_default_library" {
-			r.SetAttr("openapi_targets", asExpr(openAPITargets))
-			r.SetAttr("vendor_targets", asExpr(vendorTargets))
-			break
-		}
+		sort.Strings(tagsPkgsValues[tag][root])
 	}
 	return nil
+}
+
+// createGeneratedBzlFile uses the maps created by findGeneratorTags to generate
+// a bzl file that can be parsed by Skylark macros.
+// If a K8sCodegenBoilerplateFile was configured, the contents of this file
+// will be included as the header of the generated bzl file.
+func (v *Vendorer) createGeneratedBzlFile(tagsPkgsValues, tagsValuesPkgs generatorTagsPkgMap) (bool, error) {
+	f := &bzl.File{
+		Path: v.cfg.K8sCodegenBzlFile,
+	}
+	addCommentBefore(f, "#################################################")
+	addCommentBefore(f, "# # # # # # # # # # # # # # # # # # # # # # # # #")
+	addCommentBefore(f, "This file is autogenerated by kazel. DO NOT EDIT.")
+	addCommentBefore(f, "# # # # # # # # # # # # # # # # # # # # # # # # #")
+	addCommentBefore(f, "#################################################")
+	addCommentBefore(f, "")
+
+	f.Stmt = append(f.Stmt, varExpr("go_prefix", "The go prefix passed to kazel", v.cfg.GoPrefix))
+	f.Stmt = append(f.Stmt, varExpr("kazel_configured_tags", "The list of codegen tags kazel is configured to find", v.cfg.K8sCodegenTags))
+	f.Stmt = append(f.Stmt, varExpr("tags_pkgs_values", "tags_pkgs_values is a dictionary mapping k8s build tag -> (pkgs -> tag values in pkg)", tagsPkgsValues))
+	f.Stmt = append(f.Stmt, varExpr("tags_values_pkgs", "tags_values_pkgs is a dictionary mapping k8s build tag -> (tag values -> pkgs including that tag:value)", tagsValuesPkgs))
+
+	var boilerplate []byte
+	if v.cfg.K8sCodegenBoilerplateFile != "" {
+		var err error
+		boilerplate, err = ioutil.ReadFile(v.cfg.K8sCodegenBoilerplateFile)
+		if err != nil {
+			return false, err
+		}
+	}
+	// Open existing file to use in diff mode.
+	_, err := os.Stat(f.Path)
+	if err != nil && !os.IsNotExist(err) {
+		return false, err
+	}
+	return writeFile(f.Path, f, boilerplate, !os.IsNotExist(err), v.dryRun)
 }

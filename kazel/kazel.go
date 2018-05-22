@@ -73,7 +73,8 @@ func main() {
 			klog.Fatalf("err walking repo: %v", err)
 		}
 	}
-	if err = v.walkGenerated(); err != nil {
+	wroteGenerated := false
+	if wroteGenerated, err = v.walkGenerated(); err != nil {
 		klog.Fatalf("err walking generated: %v", err)
 	}
 	if _, err = v.walkSource("."); err != nil {
@@ -83,6 +84,9 @@ func main() {
 	if written, err = v.reconcileAllRules(); err != nil {
 		klog.Fatalf("err reconciling rules: %v", err)
 	}
+	if wroteGenerated {
+		written++
+	}
 	if *validate && written > 0 {
 		fmt.Fprintf(os.Stderr, "\n%d BUILD files not up-to-date.\n", written)
 		os.Exit(1)
@@ -91,15 +95,15 @@ func main() {
 
 // Vendorer collects context, configuration, and cache while walking the tree.
 type Vendorer struct {
-	ctx                 *build.Context
-	icache              map[icacheKey]icacheVal
-	skippedPaths        []*regexp.Regexp
-	skippedOpenAPIPaths []*regexp.Regexp
-	dryRun              bool
-	root                string
-	cfg                 *Cfg
-	newRules            map[string][]*bzl.Rule // package path -> list of rules to add or update
-	managedAttrs        []string
+	ctx                    *build.Context
+	icache                 map[icacheKey]icacheVal
+	skippedPaths           []*regexp.Regexp
+	skippedK8sCodegenPaths []*regexp.Regexp
+	dryRun                 bool
+	root                   string
+	cfg                    *Cfg
+	newRules               map[string][]*bzl.Rule // package path -> list of rules to add or update
+	managedAttrs           []string
 }
 
 func newVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
@@ -137,11 +141,11 @@ func newVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 	sp = append(builtIn, sp...)
 	v.skippedPaths = sp
 
-	sop, err := compileSkippedPaths(cfg.SkippedOpenAPIGenPaths)
+	sop, err := compileSkippedPaths(cfg.SkippedK8sCodegenPaths)
 	if err != nil {
 		return nil, err
 	}
-	v.skippedOpenAPIPaths = append(sop, sp...)
+	v.skippedK8sCodegenPaths = append(sop, sp...)
 
 	return &v, nil
 
@@ -284,7 +288,6 @@ const (
 	RuleTypeGoXTest
 	RuleTypeCGoGenrule
 	RuleTypeFileGroup
-	RuleTypeOpenAPILibrary
 )
 
 // RuleKind converts a value of the RuleType* enum into the BUILD string.
@@ -302,8 +305,6 @@ func (rt ruleType) RuleKind() string {
 		return "cgo_genrule"
 	case RuleTypeFileGroup:
 		return "filegroup"
-	case RuleTypeOpenAPILibrary:
-		return "openapi_library"
 	}
 	panic("unreachable")
 }
@@ -530,6 +531,42 @@ func (l Label) String() string {
 	return fmt.Sprintf("//%v:%v", l.pkg, l.tag)
 }
 
+// addCommentBefore adds a whole-line comment before the provided Expr.
+func addCommentBefore(e bzl.Expr, comment string) {
+	c := e.Comment()
+	c.Before = append(c.Before, bzl.Comment{Token: fmt.Sprintf("# %s", comment)})
+}
+
+// varExpr creates a variable expression of the form "name = expr".
+// v will be converted into an appropriate Expr using asExpr.
+// The optional description will be included as a comment before the expression.
+func varExpr(name, desc string, v interface{}) bzl.Expr {
+	e := &bzl.BinaryExpr{
+		X:  &bzl.LiteralExpr{Token: name},
+		Op: "=",
+		Y:  asExpr(v),
+	}
+	if desc != "" {
+		addCommentBefore(e, desc)
+	}
+	return e
+}
+
+// rvSliceLessFunc returns a function that can be used with sort.Slice() or sort.SliceStable()
+// to sort a slice of reflect.Values.
+// It sorts ints and floats as their native kinds, and everything else as a string.
+func rvSliceLessFunc(k reflect.Kind, vs []reflect.Value) func(int, int) bool {
+	switch k {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return func(i, j int) bool { return vs[i].Int() < vs[j].Int() }
+	case reflect.Float32, reflect.Float64:
+		return func(i, j int) bool { return vs[i].Float() < vs[j].Float() }
+	default:
+		return func(i, j int) bool { return vs[i].String() < vs[j].String() }
+	}
+}
+
 func asExpr(e interface{}) bzl.Expr {
 	rv := reflect.ValueOf(e)
 	switch rv.Kind() {
@@ -546,8 +583,19 @@ func asExpr(e interface{}) bzl.Expr {
 			list = append(list, asExpr(rv.Index(i).Interface()))
 		}
 		return &bzl.ListExpr{List: list}
+	case reflect.Map:
+		var list []bzl.Expr
+		keys := rv.MapKeys()
+		sort.SliceStable(keys, rvSliceLessFunc(rv.Type().Key().Kind(), keys))
+		for _, key := range keys {
+			list = append(list, &bzl.KeyValueExpr{
+				Key:   asExpr(key.Interface()),
+				Value: asExpr(rv.MapIndex(key).Interface()),
+			})
+		}
+		return &bzl.DictExpr{List: list}
 	default:
-		klog.Fatalf("Uh oh")
+		klog.Fatalf("unhandled kind: %q for value: %q", rv.Kind(), rv)
 		return nil
 	}
 }
@@ -639,7 +687,7 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dr
 			reconcileLoad(f, rules)
 		}
 		writeRules(f, rules)
-		return writeFile(path, f, false, dryRun)
+		return writeFile(path, f, nil, false, dryRun)
 	} else if err != nil {
 		return false, err
 	}
@@ -690,7 +738,7 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dr
 		reconcileLoad(f, f.Rules(""))
 	}
 
-	return writeFile(path, f, true, dryRun)
+	return writeFile(path, f, nil, true, dryRun)
 }
 
 func reconcileLoad(f *bzl.File, rules []*bzl.Rule) {
@@ -746,10 +794,12 @@ func RuleIsManaged(r *bzl.Rule, manageGoRules bool) bool {
 	return automanaged
 }
 
-func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
+func writeFile(path string, f *bzl.File, boilerplate []byte, exists, dryRun bool) (bool, error) {
 	var info bzl.RewriteInfo
 	bzl.Rewrite(f, &info)
-	out := bzl.Format(f)
+	var out []byte
+	out = append(out, boilerplate...)
+	out = append(out, bzl.Format(f)...)
 	if exists {
 		orig, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -775,13 +825,13 @@ func writeFile(path string, f *bzl.File, exists, dryRun bool) (bool, error) {
 
 func context() *build.Context {
 	return &build.Context{
-		GOARCH:      "amd64",
-		GOOS:        "linux",
+		GOARCH:      build.Default.GOARCH,
+		GOOS:        build.Default.GOOS,
 		GOROOT:      build.Default.GOROOT,
 		GOPATH:      build.Default.GOPATH,
-		ReleaseTags: []string{"go1.1", "go1.2", "go1.3", "go1.4", "go1.5", "go1.6", "go1.7", "go1.8"},
 		Compiler:    runtime.Compiler,
 		CgoEnabled:  true,
+		UseAllFiles: true,
 	}
 }
 

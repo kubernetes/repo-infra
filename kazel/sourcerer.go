@@ -25,8 +25,10 @@ import (
 )
 
 const (
-	pkgSrcsTarget = "package-srcs"
-	allSrcsTarget = "all-srcs"
+	pkgSrcsTarget   = "package-srcs"
+	allSrcsTarget   = "all-srcs"
+	pkgGoSrcsTarget = "package-go-srcs"
+	allGoSrcsTarget = "all-go-srcs"
 )
 
 // walkSource walks the source tree recursively from pkgPath, adding
@@ -90,6 +92,11 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 		pkgSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**"], exclude=["bazel-*/**", ".git/**"])`}
 	}
 
+	pkgGoSrcsExpr := &bzl.LiteralExpr{Token: `glob(["**/*.go"])`}
+	if pkgPath == "." {
+		pkgGoSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**/*.go"], exclude=["bazel-*/**", ".git/**"])`}
+	}
+
 	v.addRules(pkgPath, []*bzl.Rule{
 		newRule(RuleTypeFileGroup,
 			func(_ ruleType) string { return pkgSrcsTarget },
@@ -101,6 +108,19 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 			func(_ ruleType) string { return allSrcsTarget },
 			map[string]bzl.Expr{
 				"srcs": asExpr(append(children, fmt.Sprintf(":%s", pkgSrcsTarget))),
+				// TODO: should this be more restricted?
+				"visibility": asExpr([]string{"//visibility:public"}),
+			}),
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return pkgGoSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs":       pkgGoSrcsExpr,
+				"visibility": asExpr([]string{"//visibility:private"}),
+			}),
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return allGoSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs": asExpr(append(children, fmt.Sprintf(":%s", pkgGoSrcsTarget))),
 				// TODO: should this be more restricted?
 				"visibility": asExpr([]string{"//visibility:public"}),
 			}),

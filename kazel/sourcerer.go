@@ -25,19 +25,100 @@ import (
 )
 
 const (
-	pkgSrcsTarget = "package-srcs"
-	allSrcsTarget = "all-srcs"
+	pkgSrcsTarget   = "package-srcs"
+	allSrcsTarget   = "all-srcs"
+	pkgGoSrcsTarget = "package-go-srcs"
+	allGoSrcsTarget = "all-go-srcs"
 )
+
+var allVisitors []sourceVisitor = []sourceVisitor{allSrcsVisitor, allGoSrcsVisitor}
 
 // walkSource walks the source tree recursively from pkgPath, adding
 // any BUILD files to v.newRules to be formatted.
 //
 // If AddSourcesRules is enabled in the kazel config, then we additionally add
-// package-sources and recursive all-srcs filegroups rules to every BUILD file.
+// package-sources and recursive all-srcs (and the go analogs) filegroups rules
+// to every BUILD file.
+func (v *Vendorer) walkSource(pkgPath string) error {
+	for _, visitor := range allVisitors {
+		_, err := v.walkSourceHelper(pkgPath, visitor)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// A sourceVisitor takes a package path and a list of child targets and returns
+// a list of bazel rules to add and a string describing the target that should
+// be used by a parent rule.
+type sourceVisitor func(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string)
+
+// This visitor generates the package-go-srcs and all-go-srcs targets.
+func allGoSrcsVisitor(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string) {
+	pkgSrcsExpr := &bzl.LiteralExpr{Token: `glob(["**/*.go"])`}
+	if pkgPath == "." {
+		pkgSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**/*.go"], exclude=["bazel-*/**", ".git/**"])`}
+	}
+
+	rules = []*bzl.Rule{
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return pkgGoSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs":       pkgSrcsExpr,
+				"visibility": asExpr([]string{"//visibility:private"}),
+			}),
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return allGoSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs": asExpr(append(childTargets, fmt.Sprintf(":%s", pkgGoSrcsTarget))),
+				// TODO: should this be more restricted?
+				"visibility": asExpr([]string{"//visibility:public"}),
+			}),
+	}
+
+	selfTarget = fmt.Sprintf("//%s:%s", pkgPath, allGoSrcsTarget)
+
+	return
+}
+
+// This visitor generates the package-srcs and all-srcs targets.
+func allSrcsVisitor(pkgPath string, childTargets []string) (rules []*bzl.Rule, selfTarget string) {
+	pkgSrcsExpr := &bzl.LiteralExpr{Token: `glob(["**"])`}
+	if pkgPath == "." {
+		pkgSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**"], exclude=["bazel-*/**", ".git/**"])`}
+	}
+
+	rules = []*bzl.Rule{
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return pkgSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs":       pkgSrcsExpr,
+				"visibility": asExpr([]string{"//visibility:private"}),
+			}),
+		newRule(RuleTypeFileGroup,
+			func(_ ruleType) string { return allSrcsTarget },
+			map[string]bzl.Expr{
+				"srcs": asExpr(append(childTargets, fmt.Sprintf(":%s", pkgSrcsTarget))),
+				// TODO: should this be more restricted?
+				"visibility": asExpr([]string{"//visibility:public"}),
+			}),
+	}
+
+	selfTarget = fmt.Sprintf("//%s:%s", pkgPath, allSrcsTarget)
+
+	return
+}
+
+// walkSourceHelper walks the source tree recursively from pkgPath, adding
+// any BUILD files to v.newRules to be formatted.
+//
+// If AddSourcesRules is enabled in the kazel config, then we additionally add
+// the rules found by `visitor`.
 //
 // Returns the list of children all-srcs targets that should be added to the
 // all-srcs rule of the enclosing package.
-func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
+func (v *Vendorer) walkSourceHelper(pkgPath string, visitor sourceVisitor) ([]string, error) {
 	// clean pkgPath since we access v.newRules directly
 	pkgPath = filepath.Clean(pkgPath)
 	for _, r := range v.skippedPaths {
@@ -54,7 +135,7 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 	var children []string
 	for _, f := range files {
 		if f.IsDir() {
-			c, err := v.walkSource(filepath.Join(pkgPath, f.Name()))
+			c, err := v.walkSourceHelper(filepath.Join(pkgPath, f.Name()), visitor)
 			if err != nil {
 				return nil, err
 			}
@@ -85,25 +166,8 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 		return nil, nil
 	}
 
-	pkgSrcsExpr := &bzl.LiteralExpr{Token: `glob(["**"])`}
-	if pkgPath == "." {
-		pkgSrcsExpr = &bzl.LiteralExpr{Token: `glob(["**"], exclude=["bazel-*/**", ".git/**"])`}
-	}
+	rules, selfTarget := visitor(pkgPath, children)
+	v.addRules(pkgPath, rules)
 
-	v.addRules(pkgPath, []*bzl.Rule{
-		newRule(RuleTypeFileGroup,
-			func(_ ruleType) string { return pkgSrcsTarget },
-			map[string]bzl.Expr{
-				"srcs":       pkgSrcsExpr,
-				"visibility": asExpr([]string{"//visibility:private"}),
-			}),
-		newRule(RuleTypeFileGroup,
-			func(_ ruleType) string { return allSrcsTarget },
-			map[string]bzl.Expr{
-				"srcs": asExpr(append(children, fmt.Sprintf(":%s", pkgSrcsTarget))),
-				// TODO: should this be more restricted?
-				"visibility": asExpr([]string{"//visibility:public"}),
-			}),
-	})
-	return []string{fmt.Sprintf("//%s:%s", pkgPath, allSrcsTarget)}, nil
+	return []string{selfTarget}, nil
 }

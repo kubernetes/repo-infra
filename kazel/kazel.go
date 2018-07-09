@@ -75,7 +75,7 @@ func main() {
 	if err = v.walkGenerated(); err != nil {
 		glog.Fatalf("err walking generated: %v", err)
 	}
-	if _, err = v.walkSource("."); err != nil {
+	if err = v.walkSource("."); err != nil {
 		glog.Fatalf("err walking source: %v", err)
 	}
 	written := 0

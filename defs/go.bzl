@@ -28,7 +28,7 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
 def _go_genrule_impl(ctx):
     go = go_context(ctx)
 
-    all_srcs = depset(go.stdlib.files)
+    all_srcs = depset(go.stdlib.libs + go.sdk.srcs + [go.go])
     label_dict = {}
     go_paths = []
 
@@ -53,7 +53,10 @@ def _go_genrule_impl(ctx):
 
     cmd = [
         "set -e",
-        "export GOPATH=" + ctx.configuration.host_path_separator.join(["$$(pwd)/" + p for p in go_paths]),
+        "export GO_GENRULE_EXECROOT=$$(pwd)",
+        # Set GOPATH and GOROOT to absolute paths so that commands can chdir without issue
+        "export GOPATH=" + ctx.configuration.host_path_separator.join(["$$GO_GENRULE_EXECROOT/" + p for p in go_paths]),
+        "export GOROOT=$$GO_GENRULE_EXECROOT/" + go.root,
         ctx.attr.cmd.strip(" \t\n\r"),
     ]
     resolved_inputs, argv, runfiles_manifests = ctx.resolve_command(

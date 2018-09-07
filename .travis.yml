@@ -21,6 +21,7 @@ install:
   - go install ./...
 
 script:
+  - cd verify/boilerplate && python -m unittest boilerplate_test ; cd -
   - verify/verify-boilerplate.sh --rootdir="$GOPATH/src/k8s.io/repo-infra" -v
   - verify/verify-go-src.sh --rootdir "$GOPATH/src/k8s.io/repo-infra" -v
   - buildifier -mode=check $(find . -name BUILD -o -name '*.bzl' -type f -not -wholename '*/vendor/*')

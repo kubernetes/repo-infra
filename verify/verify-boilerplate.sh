@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Copyright 2014 The Kubernetes Authors.
+# Copyright 2018 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,39 +18,61 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-# This script is intended to be used via subtree in a top-level directory:
-# <repo>/
-#  repo-infra/
-#    verify/
+if [ "$(uname)" = 'Darwin' ]; then
+  readlinkf(){ perl -MCwd -e 'print Cwd::abs_path shift' "$1";}
+else
+  readlinkf(){ readlink -f "$1"; }
+fi
 
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/../..
+# shellcheck disable=SC2128
+SCRIPT_DIR="$(cd "$(dirname "$(readlinkf "$BASH_SOURCE")")" ; pwd)"
 
-boilerDir="${REPO_ROOT}/repo-infra/verify/boilerplate"
+# We assume the link to the script ( {ensure,verify}-boilerplate.sh ) to be
+# in a directory 2 levels down from the repo root, e.g. in
+#   <root>/repo-infra/verify/verify-boilerplate.sh
+# Alternatively, you can set the project root by setting the variable
+# `REPO_ROOT`.
+#
+# shellcheck disable=SC2128
+: "${REPO_ROOT:="$(cd "${SCRIPT_DIR}/../.." ; pwd)"}"
+
+boilerDir="${SCRIPT_DIR}/boilerplate/"
 boiler="${boilerDir}/boilerplate.py"
 
-files_need_boilerplate=($(${boiler} "$@"))
+verify() {
+  # shellcheck disable=SC2207
+  files_need_boilerplate=(
+    $( "$boiler" --rootdir="$REPO_ROOT" --boilerplate-dir="$boilerDir" "$@")
+  )
 
-# Run boilerplate.py unit tests
-unitTestOut="$(mktemp)"
-trap cleanup EXIT
-cleanup() {
-	rm "${unitTestOut}"
+  # Run boilerplate check
+  if [[ ${#files_need_boilerplate[@]} -gt 0 ]]; then
+    for file in "${files_need_boilerplate[@]}"; do
+      echo "Boilerplate header is wrong for: ${file}" >&2
+    done
+
+    return 1
+  fi
 }
 
-pushd "${boilerDir}" >/dev/null
-if ! python -m unittest boilerplate_test 2>"${unitTestOut}"; then
-	echo "boilerplate_test.py failed"
-	echo
-	cat "${unitTestOut}"
-	exit 1
-fi
-popd >/dev/null
+ensure() {
+  "$boiler" --rootdir="$REPO_ROOT" --boilerplate-dir="$boilerDir" --ensure "$@"
+}
 
-# Run boilerplate check
-if [[ ${#files_need_boilerplate[@]} -gt 0 ]]; then
-  for file in "${files_need_boilerplate[@]}"; do
-    echo "Boilerplate header is wrong for: ${file}"
-  done
+case "$0" in
+  */ensure-boilerplate.sh)
+    ensure "$@"
+    ;;
+  */verify-boilerplate.sh)
+    verify "$@"
+    ;;
+  *)
+    {
+      echo "unknown command '$0'"
+      echo ""
+      echo "Call the script as either 'verify-boilerplate.sh' or 'ensure-boilerplate.sh'"
+    } >&2
 
-  exit 1
-fi
+    exit 1
+    ;;
+esac

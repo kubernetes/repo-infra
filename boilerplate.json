@@ -1,0 +1,10 @@
+{
+  "dirs_to_skip" : [
+    "vendor/",
+    "boilerplate/test_with_config_file/",
+    "boilerplate/test/"
+  ],
+  "not_generated_files_to_skip" : [
+    "boilerplate/boilerplate.py"
+  ]
+}

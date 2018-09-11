@@ -89,7 +89,7 @@ def is_generated_file(filename, data, regexs, files_to_skip):
 
 def match_and_delete(content, re):
     match = re.search(content)
-    if match == None:
+    if match is None:
         return content, None
     return re.sub("", content, 1), match.group()
 
@@ -125,7 +125,7 @@ def file_passes(filename, refs, regexs, not_generated_files_to_skip):
 
 
 def file_content_passes(data, filename, ref, extension, generated, regexs):
-    if ref == None:
+    if ref is None:
         return True
 
     data, _ = replace_specials(data, extension, regexs)
@@ -263,7 +263,7 @@ def ensure_boilerplate_file(file_name, refs, regexs, not_generated_files_to_skip
         new_content = ''
 
         # shebang and such
-        if special_header != None:
+        if special_header is not None:
             new_content += special_header
 
         # licence header

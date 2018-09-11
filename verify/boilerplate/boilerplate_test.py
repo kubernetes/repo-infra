@@ -195,7 +195,7 @@ def function_mocker(function_name, original_holder, return_value=None):
     # mock the function
     def the_mock(*args):
         mock_call_args.append(args)
-        if return_value != None:
+        if return_value is not None:
             return return_value
 
     # use the mock in place of the original implementation

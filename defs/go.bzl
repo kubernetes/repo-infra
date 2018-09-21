@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@io_bazel_rules_go//go:def.bzl", "GoPath", "go_context", "go_path", "go_rule")
+load("@io_bazel_rules_go//go:def.bzl", "GoLibrary", "GoPath", "go_context", "go_path", "go_rule")
 
-def _compute_genrule_variables(resolved_srcs, resolved_outs):
+def _compute_genrule_variables(resolved_srcs, resolved_outs, src_import_paths):
     variables = {
         "SRCS": cmd_helper.join_paths(" ", resolved_srcs),
         "OUTS": cmd_helper.join_paths(" ", resolved_outs),
+        "SRC_IMPORT_PATHS": " ".join(src_import_paths),
     }
     if len(resolved_srcs) == 1:
         variables["<"] = list(resolved_srcs)[0].path
@@ -31,10 +32,12 @@ def _go_genrule_impl(ctx):
     all_srcs = depset(go.stdlib.libs + go.sdk.srcs + [go.sdk.go])
     label_dict = {}
     go_paths = []
+    src_import_paths = []
 
     for dep in ctx.attr.srcs:
         all_srcs += dep.files
         label_dict[dep.label] = dep.files
+        src_import_paths.append(dep[GoLibrary].importpath)
 
     for go_path in ctx.attr.go_paths:
         all_srcs += go_path.files
@@ -63,7 +66,8 @@ def _go_genrule_impl(ctx):
         command = "\n".join(cmd),
         attribute = "cmd",
         expand_locations = True,
-        make_variables = _compute_genrule_variables(all_srcs, depset(ctx.outputs.outs)),
+        make_variables = _compute_genrule_variables(
+          all_srcs, depset(ctx.outputs.outs), src_import_paths),
         tools = ctx.attr.tools,
         label_dict = label_dict,
     )
@@ -87,7 +91,7 @@ def _go_genrule_impl(ctx):
 _go_genrule = go_rule(
     _go_genrule_impl,
     attrs = {
-        "srcs": attr.label_list(allow_files = True),
+        "srcs": attr.label_list(allow_files = True, providers = [GoLibrary]),
         "tools": attr.label_list(
             cfg = "host",
             allow_files = True,

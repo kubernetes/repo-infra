@@ -29,7 +29,7 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs, src_import_paths):
 def _go_genrule_impl(ctx):
     go = go_context(ctx)
 
-    all_srcs = depset(go.stdlib.libs + go.sdk.srcs + [go.sdk.go])
+    all_srcs = depset(go.stdlib.libs + go.sdk.srcs + go.sdk.tools + [go.sdk.go])
     label_dict = {}
     go_paths = []
     src_import_paths = []

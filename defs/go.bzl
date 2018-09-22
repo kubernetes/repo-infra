@@ -68,7 +68,10 @@ def _go_genrule_impl(ctx):
         attribute = "cmd",
         expand_locations = True,
         make_variables = _compute_genrule_variables(
-          all_srcs, depset(ctx.outputs.outs), src_import_paths),
+            all_srcs,
+            depset(ctx.outputs.outs),
+            src_import_paths,
+        ),
         tools = ctx.attr.tools,
         label_dict = label_dict,
     )

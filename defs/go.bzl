@@ -73,7 +73,6 @@ def _go_genrule_impl(ctx):
         label_dict = label_dict,
     )
 
-    paths = [go.root + "/bin", "/bin", "/usr/bin"]
     ctx.action(
         inputs = list(all_srcs) + resolved_inputs,
         outputs = ctx.outputs.outs,

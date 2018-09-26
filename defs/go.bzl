@@ -59,7 +59,7 @@ def _go_genrule_impl(ctx):
     cmd = [
         "set -e",
         "export GO_GENRULE_EXECROOT=$$(pwd)",
-        # Set GOPATH and GOROOT to absolute paths so that commands can chdir without issue
+        # Set GOPATH, GOROOT, and PATH to absolute paths so that commands can chdir without issue
         "export GOPATH=" + ctx.configuration.host_path_separator.join(["$$GO_GENRULE_EXECROOT/" + p for p in go_paths]),
         "export GOROOT=$$GO_GENRULE_EXECROOT/" + go.root,
         "export PATH=$$GO_GENRULE_EXECROOT/" + go.root + "/bin:$$PATH",
@@ -78,10 +78,13 @@ def _go_genrule_impl(ctx):
         label_dict = label_dict,
     )
 
+    paths = ["/bin", "/usr/bin"]
     ctx.action(
         inputs = list(all_srcs) + resolved_inputs,
         outputs = ctx.outputs.outs,
-        env = ctx.configuration.default_shell_env + go.env,
+        env = ctx.configuration.default_shell_env + go.env + {
+            "PATH": ctx.configuration.host_path_separator.join(paths),
+        },
         command = argv,
         progress_message = "%s %s" % (ctx.attr.message, ctx),
         mnemonic = "GoGenrule",

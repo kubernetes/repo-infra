@@ -276,6 +276,13 @@ func (f *tarFile) addTar(toAdd string) error {
 	root := ""
 	if f.directory != "/" {
 		root = f.directory
+		header := tar.Header{
+			Name:     root,
+			Typeflag: tar.TypeDir,
+		}
+		if err := f.makeDirs(header); err != nil {
+			return err
+		}
 	}
 
 	var r io.Reader

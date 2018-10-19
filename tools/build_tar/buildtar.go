@@ -318,6 +318,17 @@ func (f *tarFile) addTar(toAdd string) error {
 		if header.Typeflag == tar.TypeDir && !strings.HasSuffix(header.Name, "/") {
 			header.Name = header.Name + "/"
 		}
+		// Create root directories with same permissions if missing.
+		// makeDirs keeps track of which directories exist,
+		// so it's safe to duplicate this here.
+		if err = f.makeDirs(*header); err != nil {
+			return err
+		}
+		// If this is a directory, then makeDirs already created it,
+		// so skip to the next entry.
+		if header.Typeflag == tar.TypeDir {
+			continue
+		}
 		err = f.tw.WriteHeader(header)
 		if err != nil {
 			return err

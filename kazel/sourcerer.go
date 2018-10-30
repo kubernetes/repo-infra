@@ -91,14 +91,14 @@ func (v *Vendorer) walkSource(pkgPath string) ([]string, error) {
 	}
 
 	v.addRules(pkgPath, []*bzl.Rule{
-		newRule(RuleTypeFileGroup,
-			func(_ ruleType) string { return pkgSrcsTarget },
+		newRule("filegroup",
+			pkgSrcsTarget,
 			map[string]bzl.Expr{
 				"srcs":       pkgSrcsExpr,
 				"visibility": asExpr([]string{"//visibility:private"}),
 			}),
-		newRule(RuleTypeFileGroup,
-			func(_ ruleType) string { return allSrcsTarget },
+		newRule("filegroup",
+			allSrcsTarget,
 			map[string]bzl.Expr{
 				"srcs": asExpr(append(children, fmt.Sprintf(":%s", pkgSrcsTarget))),
 				// TODO: should this be more restricted?

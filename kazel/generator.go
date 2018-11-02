@@ -24,7 +24,7 @@ import (
 	"sort"
 	"strings"
 
-	bzl "github.com/bazelbuild/buildtools/build"
+	"github.com/bazelbuild/buildtools/build"
 )
 
 var (
@@ -32,105 +32,114 @@ var (
 	genTagRe = regexp.MustCompile(`//\s*\+k8s:([^\s=]+)(?:=(\S+))\s*\n`)
 )
 
-// tag name -> (pkg -> values)
-type generatorTagsPkgMap map[string]map[string][]string
+// {tagName: {value: {pkgs}}}
+type generatorTagsValuesPkgsMap map[string]map[string]map[string]bool
 
-// walkGenerated generates the k8s codegen bzl file.
-// This involves reading all non-test go sources in the tree and looking for
-// "+k8s:name=value" tags. Only those tags listed in K8sCodegenTags will be
-// included.
-func (v *Vendorer) walkGenerated() (bool, error) {
-	if v.cfg.K8sCodegenBzlFile == "" {
-		return false, nil
+// extractTags finds k8s codegen tags found in b listed in requestedTags.
+// It returns a map of {tag name: slice of values for that tag}.
+func extractTags(b []byte, requestedTags map[string]bool) map[string][]string {
+	tags := make(map[string][]string)
+	matches := genTagRe.FindAllSubmatch(b, -1)
+	for _, m := range matches {
+		if len(m) >= 3 {
+			tag, values := string(m[1]), string(m[2])
+			if _, requested := requestedTags[tag]; !requested {
+				continue
+			}
+			tags[tag] = append(tags[tag], strings.Split(values, ",")...)
+		}
 	}
-	// only include the specified tags
-	requestedTags := make(map[string]bool)
-	// tag name -> (pkg -> values)
-	tagsPkgsValues := make(generatorTagsPkgMap)
-	// tag name -> (tag value -> pkgs)
-	tagsValuesPkgs := make(generatorTagsPkgMap)
-	for _, tag := range v.cfg.K8sCodegenTags {
-		requestedTags[tag] = true
-	}
-	err := v.findGeneratorTags(".", requestedTags, tagsPkgsValues, tagsValuesPkgs)
-	if err != nil {
-		return false, err
-	}
-
-	return v.createGeneratedBzlFile(tagsPkgsValues, tagsValuesPkgs)
+	return tags
 }
 
 // findGeneratorTags searches for all packages under root that include a kubernetes generator
-// tag comment. It does not follow symlinks, and any path in the configured skippedPaths is skipped.
-func (v *Vendorer) findGeneratorTags(root string, requestedTags map[string]bool, tagsPkgsValues, tagsValuesPkgs generatorTagsPkgMap) error {
-	for _, r := range v.skippedK8sCodegenPaths {
-		if r.MatchString(root) {
-			return nil
+// tag comment. It does not follow symlinks, and any path in the configured skippedPaths
+// or codegen skipped paths is skipped.
+func (v *Vendorer) findGeneratorTags(root string, requestedTags map[string]bool) (generatorTagsValuesPkgsMap, error) {
+	tagsValuesPkgs := make(generatorTagsValuesPkgsMap)
+
+	walkErr := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
 		}
-	}
-	finfos, err := ioutil.ReadDir(root)
-	if err != nil {
-		return err
-	}
-	// map tag name -> set of values
-	foundTags := make(map[string]map[string]bool)
-	for _, finfo := range finfos {
-		path := filepath.Join(root, finfo.Name())
-		if finfo.IsDir() && (finfo.Mode()&os.ModeSymlink == 0) {
-			err := v.findGeneratorTags(path, requestedTags, tagsPkgsValues, tagsValuesPkgs)
-			if err != nil {
-				return err
+		pkg := filepath.Dir(path)
+
+		for _, r := range v.skippedK8sCodegenPaths {
+			if r.MatchString(pkg) {
+				return filepath.SkipDir
 			}
-			continue
 		}
+
 		if !strings.HasSuffix(path, ".go") || strings.HasSuffix(path, "_test.go") {
-			continue
+			return nil
 		}
 
 		b, err := ioutil.ReadFile(path)
 		if err != nil {
 			return err
 		}
-		matches := genTagRe.FindAllSubmatch(b, -1)
-		for _, m := range matches {
-			if len(m) >= 3 {
-				tag, values := string(m[1]), string(m[2])
-				if _, requested := requestedTags[tag]; !requested {
-					continue
+
+		for tag, values := range extractTags(b, requestedTags) {
+			if _, present := tagsValuesPkgs[tag]; !present {
+				tagsValuesPkgs[tag] = make(map[string]map[string]bool)
+			}
+			for _, v := range values {
+				if _, present := tagsValuesPkgs[tag][v]; !present {
+					tagsValuesPkgs[tag][v] = make(map[string]bool)
 				}
-				if _, present := foundTags[tag]; !present {
-					foundTags[tag] = make(map[string]bool)
-				}
-				for _, v := range strings.Split(values, ",") {
-					foundTags[tag][v] = true
-				}
+				// Since multiple files in the same package may list a given tag/value, use a set to deduplicate.
+				tagsValuesPkgs[tag][v][pkg] = true
 			}
 		}
+
+		return nil
+	})
+
+	if walkErr != nil {
+		return nil, walkErr
 	}
 
-	for tag, values := range foundTags {
-		if _, present := tagsPkgsValues[tag]; !present {
-			tagsPkgsValues[tag] = make(map[string][]string)
-		}
-		if _, present := tagsValuesPkgs[tag]; !present {
-			tagsValuesPkgs[tag] = make(map[string][]string)
-		}
-
-		for v := range values {
-			tagsPkgsValues[tag][root] = append(tagsPkgsValues[tag][root], v)
-			tagsValuesPkgs[tag][v] = append(tagsValuesPkgs[tag][v], root)
-		}
-		sort.Strings(tagsPkgsValues[tag][root])
-	}
-	return nil
+	return tagsValuesPkgs, nil
 }
 
-// createGeneratedBzlFile uses the maps created by findGeneratorTags to generate
-// a bzl file that can be parsed by Skylark macros.
+// flattened returns a copy of the map with the final stringSet flattened into a sorted slice.
+func flattened(m generatorTagsValuesPkgsMap) map[string]map[string][]string {
+	flattened := make(map[string]map[string][]string)
+	for tag, subMap := range m {
+		flattened[tag] = make(map[string][]string)
+		for k, subSet := range subMap {
+			for v := range subSet {
+				flattened[tag][k] = append(flattened[tag][k], v)
+			}
+			sort.Strings(flattened[tag][k])
+		}
+	}
+	return flattened
+}
+
+// walkGenerated generates a k8s codegen bzl file that can be parsed by Starlark
+// rules and macros to find packages needed k8s code generation.
+// This involves reading all non-test go sources in the tree and looking for
+// "+k8s:name=value" tags. Only those tags listed in K8sCodegenTags will be
+// included.
 // If a K8sCodegenBoilerplateFile was configured, the contents of this file
 // will be included as the header of the generated bzl file.
-func (v *Vendorer) createGeneratedBzlFile(tagsPkgsValues, tagsValuesPkgs generatorTagsPkgMap) (bool, error) {
-	f := &bzl.File{
+// Returns true if there are diffs against the existing generated bzl file.
+func (v *Vendorer) walkGenerated() (bool, error) {
+	if v.cfg.K8sCodegenBzlFile == "" {
+		return false, nil
+	}
+	// only include the specified tags
+	requestedTags := make(map[string]bool)
+	for _, tag := range v.cfg.K8sCodegenTags {
+		requestedTags[tag] = true
+	}
+	tagsValuesPkgs, err := v.findGeneratorTags(".", requestedTags)
+	if err != nil {
+		return false, err
+	}
+
+	f := &build.File{
 		Path: v.cfg.K8sCodegenBzlFile,
 	}
 	addCommentBefore(f, "#################################################")
@@ -142,19 +151,17 @@ func (v *Vendorer) createGeneratedBzlFile(tagsPkgsValues, tagsValuesPkgs generat
 
 	f.Stmt = append(f.Stmt, varExpr("go_prefix", "The go prefix passed to kazel", v.cfg.GoPrefix))
 	f.Stmt = append(f.Stmt, varExpr("kazel_configured_tags", "The list of codegen tags kazel is configured to find", v.cfg.K8sCodegenTags))
-	f.Stmt = append(f.Stmt, varExpr("tags_pkgs_values", "tags_pkgs_values is a dictionary mapping k8s build tag -> (pkgs -> tag values in pkg)", tagsPkgsValues))
-	f.Stmt = append(f.Stmt, varExpr("tags_values_pkgs", "tags_values_pkgs is a dictionary mapping k8s build tag -> (tag values -> pkgs including that tag:value)", tagsValuesPkgs))
+	f.Stmt = append(f.Stmt, varExpr("tags_values_pkgs", "tags_values_pkgs is a dictionary mapping {k8s build tag: {tag value: [pkgs including that tag:value]}}", flattened(tagsValuesPkgs)))
 
 	var boilerplate []byte
 	if v.cfg.K8sCodegenBoilerplateFile != "" {
-		var err error
 		boilerplate, err = ioutil.ReadFile(v.cfg.K8sCodegenBoilerplateFile)
 		if err != nil {
 			return false, err
 		}
 	}
 	// Open existing file to use in diff mode.
-	_, err := os.Stat(f.Path)
+	_, err = os.Stat(f.Path)
 	if err != nil && !os.IsNotExist(err) {
 		return false, err
 	}

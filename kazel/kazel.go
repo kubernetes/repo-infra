@@ -563,18 +563,24 @@ func rvSliceLessFunc(k reflect.Kind, vs []reflect.Value) func(int, int) bool {
 	case reflect.Float32, reflect.Float64:
 		return func(i, j int) bool { return vs[i].Float() < vs[j].Float() }
 	default:
-		return func(i, j int) bool { return vs[i].String() < vs[j].String() }
+		return func(i, j int) bool {
+			return fmt.Sprintf("%v", vs[i]) < fmt.Sprintf("%v", vs[j])
+		}
 	}
 }
 
+// asExpr converts a native Go type into the equivalent Starlark expression using reflection.
+// The keys of maps will be sorted for reproducibility.
 func asExpr(e interface{}) bzl.Expr {
 	rv := reflect.ValueOf(e)
 	switch rv.Kind() {
+	case reflect.Bool:
+		return &bzl.LiteralExpr{Token: fmt.Sprintf("%t", e)}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
 		return &bzl.LiteralExpr{Token: fmt.Sprintf("%d", e)}
 	case reflect.Float32, reflect.Float64:
-		return &bzl.LiteralExpr{Token: fmt.Sprintf("%f", e)}
+		return &bzl.LiteralExpr{Token: fmt.Sprintf("%g", e)}
 	case reflect.String:
 		return &bzl.StringExpr{Value: e.(string)}
 	case reflect.Slice, reflect.Array:
@@ -794,6 +800,11 @@ func RuleIsManaged(r *bzl.Rule, manageGoRules bool) bool {
 	return automanaged
 }
 
+// writeFile writes out f to path, prepending boilerplate to the output.
+// If exists is true, compares against the existing file specified by path,
+// returning false if there are no changes.
+// Otherwise, returns true.
+// If dryRun is false, no files are actually changed; otherwise, the file will be written.
 func writeFile(path string, f *bzl.File, boilerplate []byte, exists, dryRun bool) (bool, error) {
 	var info bzl.RewriteInfo
 	bzl.Rewrite(f, &info)

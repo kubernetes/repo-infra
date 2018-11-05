@@ -31,9 +31,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
-
 	"golang.org/x/build/pargzip"
+
+	"k8s.io/klog"
 )
 
 func main() {
@@ -84,53 +84,53 @@ func main() {
 	if flagfile != "" {
 		b, err := ioutil.ReadFile(flagfile)
 		if err != nil {
-			glog.Fatalf("couldn't read flagfile: %v", err)
+			klog.Fatalf("couldn't read flagfile: %v", err)
 		}
 		cmdline := strings.Split(string(b), "\n")
 		flag.CommandLine.Parse(cmdline)
 	}
 
 	if output == "" {
-		glog.Fatalf("--output flag is required")
+		klog.Fatalf("--output flag is required")
 	}
 
 	meta := newFileMeta(mode, modes, owner, owners, ownerName, ownerNames)
 
 	tf, err := newTarFile(output, directory, compression, meta)
 	if err != nil {
-		glog.Fatalf("couldn't build tar: %v", err)
+		klog.Fatalf("couldn't build tar: %v", err)
 	}
 	defer tf.Close()
 
 	for _, file := range files {
 		parts := strings.SplitN(file, "=", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("bad parts length for file %q", file)
+			klog.Fatalf("bad parts length for file %q", file)
 		}
 		if err := tf.addFile(parts[0], parts[1]); err != nil {
-			glog.Fatalf("couldn't add file: %v", err)
+			klog.Fatalf("couldn't add file: %v", err)
 		}
 	}
 
 	for _, tar := range tars {
 		if err := tf.addTar(tar); err != nil {
-			glog.Fatalf("couldn't add tar: %v", err)
+			klog.Fatalf("couldn't add tar: %v", err)
 		}
 	}
 
 	for _, deb := range debs {
 		if err := tf.addDeb(deb); err != nil {
-			glog.Fatalf("couldn't add deb: %v", err)
+			klog.Fatalf("couldn't add deb: %v", err)
 		}
 	}
 
 	for _, link := range links {
 		parts := strings.SplitN(link, ":", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("bad parts length for link %q", link)
+			klog.Fatalf("bad parts length for link %q", link)
 		}
 		if err := tf.addLink(parts[0], parts[1]); err != nil {
-			glog.Fatalf("couldn't add link: %v", err)
+			klog.Fatalf("couldn't add link: %v", err)
 		}
 	}
 }
@@ -390,7 +390,7 @@ func newFileMeta(
 	if mode != "" {
 		i, err := strconv.ParseUint(mode, 8, 32)
 		if err != nil {
-			glog.Fatalf("couldn't parse mode: %v", mode)
+			klog.Fatalf("couldn't parse mode: %v", mode)
 		}
 		meta.defaultMode = os.FileMode(i)
 	}
@@ -399,14 +399,14 @@ func newFileMeta(
 	for _, filemode := range modes {
 		parts := strings.SplitN(filemode, "=", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("expected two parts to %q", filemode)
+			klog.Fatalf("expected two parts to %q", filemode)
 		}
 		if parts[0][0] == '/' {
 			parts[0] = parts[0][1:]
 		}
 		i, err := strconv.ParseUint(parts[1], 8, 32)
 		if err != nil {
-			glog.Fatalf("couldn't parse mode: %v", filemode)
+			klog.Fatalf("couldn't parse mode: %v", filemode)
 		}
 		meta.modeMap[parts[0]] = os.FileMode(i)
 	}
@@ -414,7 +414,7 @@ func newFileMeta(
 	if ownerName != "" {
 		parts := strings.SplitN(ownerName, ".", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("expected two parts to %q", ownerName)
+			klog.Fatalf("expected two parts to %q", ownerName)
 		}
 		meta.defaultUname = parts[0]
 		meta.defaultGname = parts[1]
@@ -425,13 +425,13 @@ func newFileMeta(
 	for _, name := range ownerNames {
 		parts := strings.SplitN(name, "=", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("expected two parts to %q %v", name, parts)
+			klog.Fatalf("expected two parts to %q %v", name, parts)
 		}
 		filename, ownername := parts[0], parts[1]
 
 		parts = strings.SplitN(ownername, ".", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("expected two parts to %q", name)
+			klog.Fatalf("expected two parts to %q", name)
 		}
 		uname, gname := parts[0], parts[1]
 
@@ -442,15 +442,15 @@ func newFileMeta(
 	if owner != "" {
 		parts := strings.SplitN(owner, ".", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("expected two parts to %q", owner)
+			klog.Fatalf("expected two parts to %q", owner)
 		}
 		uid, err := strconv.Atoi(parts[0])
 		if err != nil {
-			glog.Fatalf("could not parse uid: %q", parts[0])
+			klog.Fatalf("could not parse uid: %q", parts[0])
 		}
 		gid, err := strconv.Atoi(parts[1])
 		if err != nil {
-			glog.Fatalf("could not parse gid: %q", parts[1])
+			klog.Fatalf("could not parse gid: %q", parts[1])
 		}
 		meta.defaultUID = uid
 		meta.defaultGID = gid
@@ -462,21 +462,21 @@ func newFileMeta(
 	for _, owner := range owners {
 		parts := strings.SplitN(owner, "=", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("expected two parts to %q", owner)
+			klog.Fatalf("expected two parts to %q", owner)
 		}
 		filename, owner := parts[0], parts[1]
 
 		parts = strings.SplitN(parts[1], ".", 2)
 		if len(parts) != 2 {
-			glog.Fatalf("expected two parts to %q", owner)
+			klog.Fatalf("expected two parts to %q", owner)
 		}
 		uid, err := strconv.Atoi(parts[0])
 		if err != nil {
-			glog.Fatalf("could not parse uid: %q", parts[0])
+			klog.Fatalf("could not parse uid: %q", parts[0])
 		}
 		gid, err := strconv.Atoi(parts[1])
 		if err != nil {
-			glog.Fatalf("could not parse gid: %q", parts[1])
+			klog.Fatalf("could not parse gid: %q", parts[1])
 		}
 		meta.uidMap[filename] = uid
 		meta.gidMap[filename] = gid

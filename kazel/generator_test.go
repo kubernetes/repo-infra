@@ -23,8 +23,9 @@ import (
 
 func TestExtractTags(t *testing.T) {
 	requestedTags := map[string]bool{
-		"foo-gen": true,
-		"baz-gen": true,
+		"foo-gen":                    true,
+		"baz-gen":                    true,
+		"quux-gen:with-extra@things": true,
 	}
 	var testCases = []struct {
 		src  string
@@ -37,6 +38,14 @@ func TestExtractTags(t *testing.T) {
 		{
 			src:  "// +k8s:bar-gen=a,b\n",
 			want: map[string][]string{},
+		},
+		{
+			src:  "// +k8s:quux-gen=true\n",
+			want: map[string][]string{},
+		},
+		{
+			src:  "// +k8s:quux-gen:with-extra@things=123\n",
+			want: map[string][]string{"quux-gen:with-extra@things": {"123"}},
 		},
 		{
 			src: `/*
@@ -75,7 +84,7 @@ import "some package"
 }
 
 func TestFlattened(t *testing.T) {
-	m := generatorTagsValuesPkgsMap{
+	m := generatorTagsMap{
 		"foo-gen": {
 			"a": {
 				"pkg/one": true,

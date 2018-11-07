@@ -32,8 +32,8 @@ var (
 	genTagRe = regexp.MustCompile(`//\s*\+k8s:([^\s=]+)(?:=(\S+))\s*\n`)
 )
 
-// {tagName: {value: {pkgs}}}
-type generatorTagsValuesPkgsMap map[string]map[string]map[string]bool
+// {tagName: {value: {pkgs}}} or {tagName: {pkg: {values}}}
+type generatorTagsMap map[string]map[string]map[string]bool
 
 // extractTags finds k8s codegen tags found in b listed in requestedTags.
 // It returns a map of {tag name: slice of values for that tag}.
@@ -55,10 +55,11 @@ func extractTags(b []byte, requestedTags map[string]bool) map[string][]string {
 // findGeneratorTags searches for all packages under root that include a kubernetes generator
 // tag comment. It does not follow symlinks, and any path in the configured skippedPaths
 // or codegen skipped paths is skipped.
-func (v *Vendorer) findGeneratorTags(root string, requestedTags map[string]bool) (generatorTagsValuesPkgsMap, error) {
-	tagsValuesPkgs := make(generatorTagsValuesPkgsMap)
+func (v *Vendorer) findGeneratorTags(root string, requestedTags map[string]bool) (tagsValuesPkgs, tagsPkgsValues generatorTagsMap, err error) {
+	tagsValuesPkgs = make(generatorTagsMap)
+	tagsPkgsValues = make(generatorTagsMap)
 
-	walkErr := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -83,27 +84,34 @@ func (v *Vendorer) findGeneratorTags(root string, requestedTags map[string]bool)
 			if _, present := tagsValuesPkgs[tag]; !present {
 				tagsValuesPkgs[tag] = make(map[string]map[string]bool)
 			}
+			if _, present := tagsPkgsValues[tag]; !present {
+				tagsPkgsValues[tag] = make(map[string]map[string]bool)
+			}
+			if _, present := tagsPkgsValues[tag][pkg]; !present {
+				tagsPkgsValues[tag][pkg] = make(map[string]bool)
+			}
 			for _, v := range values {
 				if _, present := tagsValuesPkgs[tag][v]; !present {
 					tagsValuesPkgs[tag][v] = make(map[string]bool)
 				}
 				// Since multiple files in the same package may list a given tag/value, use a set to deduplicate.
 				tagsValuesPkgs[tag][v][pkg] = true
+				tagsPkgsValues[tag][pkg][v] = true
 			}
 		}
 
 		return nil
 	})
 
-	if walkErr != nil {
-		return nil, walkErr
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return tagsValuesPkgs, nil
+	return
 }
 
 // flattened returns a copy of the map with the final stringSet flattened into a sorted slice.
-func flattened(m generatorTagsValuesPkgsMap) map[string]map[string][]string {
+func flattened(m generatorTagsMap) map[string]map[string][]string {
 	flattened := make(map[string]map[string][]string)
 	for tag, subMap := range m {
 		flattened[tag] = make(map[string][]string)
@@ -134,7 +142,7 @@ func (v *Vendorer) walkGenerated() (bool, error) {
 	for _, tag := range v.cfg.K8sCodegenTags {
 		requestedTags[tag] = true
 	}
-	tagsValuesPkgs, err := v.findGeneratorTags(".", requestedTags)
+	tagsValuesPkgs, tagsPkgsValues, err := v.findGeneratorTags(".", requestedTags)
 	if err != nil {
 		return false, err
 	}
@@ -152,6 +160,7 @@ func (v *Vendorer) walkGenerated() (bool, error) {
 	f.Stmt = append(f.Stmt, varExpr("go_prefix", "The go prefix passed to kazel", v.cfg.GoPrefix))
 	f.Stmt = append(f.Stmt, varExpr("kazel_configured_tags", "The list of codegen tags kazel is configured to find", v.cfg.K8sCodegenTags))
 	f.Stmt = append(f.Stmt, varExpr("tags_values_pkgs", "tags_values_pkgs is a dictionary mapping {k8s build tag: {tag value: [pkgs including that tag:value]}}", flattened(tagsValuesPkgs)))
+	f.Stmt = append(f.Stmt, varExpr("tags_pkgs_values", "tags_pkgs_values is a dictionary mapping {k8s build tag: {pkg: [tag values in pkg]}}", flattened(tagsPkgsValues)))
 
 	var boilerplate []byte
 	if v.cfg.K8sCodegenBoilerplateFile != "" {

@@ -27,7 +27,7 @@ import (
 	"regexp"
 	"sort"
 
-	bzl "github.com/bazelbuild/buildtools/build"
+	"github.com/bazelbuild/buildtools/build"
 
 	"k8s.io/klog"
 )
@@ -91,8 +91,8 @@ type Vendorer struct {
 	dryRun                 bool
 	root                   string
 	cfg                    *Cfg
-	newRules               map[string][]*bzl.Rule // package path -> list of rules to add or update
-	managedAttrs           []string               // which rule attributes kazel will overwrite
+	newRules               map[string][]*build.Rule // package path -> list of rules to add or update
+	managedAttrs           []string                 // which rule attributes kazel will overwrite
 }
 
 func newVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
@@ -112,7 +112,7 @@ func newVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 		dryRun:       dryRun,
 		root:         absRoot,
 		cfg:          cfg,
-		newRules:     make(map[string][]*bzl.Rule),
+		newRules:     make(map[string][]*build.Rule),
 		managedAttrs: []string{"srcs"},
 	}
 
@@ -138,13 +138,13 @@ func newVendorer(root, cfgPath string, dryRun bool) (*Vendorer, error) {
 
 }
 
-func writeRules(file *bzl.File, rules []*bzl.Rule) {
+func writeRules(file *build.File, rules []*build.Rule) {
 	for _, rule := range rules {
 		file.Stmt = append(file.Stmt, rule.Call)
 	}
 }
 
-func (v *Vendorer) addRules(pkgPath string, rules []*bzl.Rule) {
+func (v *Vendorer) addRules(pkgPath string, rules []*build.Rule) {
 	cleanPath := filepath.Clean(pkgPath)
 	v.newRules[cleanPath] = append(v.newRules[cleanPath], rules...)
 }
@@ -169,17 +169,17 @@ func (v *Vendorer) reconcileAllRules() (int, error) {
 }
 
 // addCommentBefore adds a whole-line comment before the provided Expr.
-func addCommentBefore(e bzl.Expr, comment string) {
+func addCommentBefore(e build.Expr, comment string) {
 	c := e.Comment()
-	c.Before = append(c.Before, bzl.Comment{Token: fmt.Sprintf("# %s", comment)})
+	c.Before = append(c.Before, build.Comment{Token: fmt.Sprintf("# %s", comment)})
 }
 
 // varExpr creates a variable expression of the form "name = expr".
 // v will be converted into an appropriate Expr using asExpr.
 // The optional description will be included as a comment before the expression.
-func varExpr(name, desc string, v interface{}) bzl.Expr {
-	e := &bzl.BinaryExpr{
-		X:  &bzl.LiteralExpr{Token: name},
+func varExpr(name, desc string, v interface{}) build.Expr {
+	e := &build.BinaryExpr{
+		X:  &build.LiteralExpr{Token: name},
 		Op: "=",
 		Y:  asExpr(v),
 	}
@@ -208,45 +208,45 @@ func rvSliceLessFunc(k reflect.Kind, vs []reflect.Value) func(int, int) bool {
 
 // asExpr converts a native Go type into the equivalent Starlark expression using reflection.
 // The keys of maps will be sorted for reproducibility.
-func asExpr(e interface{}) bzl.Expr {
+func asExpr(e interface{}) build.Expr {
 	rv := reflect.ValueOf(e)
 	switch rv.Kind() {
 	case reflect.Bool:
-		return &bzl.LiteralExpr{Token: fmt.Sprintf("%t", e)}
+		return &build.LiteralExpr{Token: fmt.Sprintf("%t", e)}
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return &bzl.LiteralExpr{Token: fmt.Sprintf("%d", e)}
+		return &build.LiteralExpr{Token: fmt.Sprintf("%d", e)}
 	case reflect.Float32, reflect.Float64:
-		return &bzl.LiteralExpr{Token: fmt.Sprintf("%g", e)}
+		return &build.LiteralExpr{Token: fmt.Sprintf("%g", e)}
 	case reflect.String:
-		return &bzl.StringExpr{Value: e.(string)}
+		return &build.StringExpr{Value: e.(string)}
 	case reflect.Slice, reflect.Array:
-		var list []bzl.Expr
+		var list []build.Expr
 		for i := 0; i < rv.Len(); i++ {
 			list = append(list, asExpr(rv.Index(i).Interface()))
 		}
-		return &bzl.ListExpr{List: list}
+		return &build.ListExpr{List: list}
 	case reflect.Map:
-		var list []bzl.Expr
+		var list []build.Expr
 		keys := rv.MapKeys()
 		sort.SliceStable(keys, rvSliceLessFunc(rv.Type().Key().Kind(), keys))
 		for _, key := range keys {
-			list = append(list, &bzl.KeyValueExpr{
+			list = append(list, &build.KeyValueExpr{
 				Key:   asExpr(key.Interface()),
 				Value: asExpr(rv.MapIndex(key).Interface()),
 			})
 		}
-		return &bzl.DictExpr{List: list}
+		return &build.DictExpr{List: list}
 	default:
 		klog.Fatalf("unhandled kind: %q for value: %q", rv.Kind(), rv)
 		return nil
 	}
 }
 
-func newRule(rt, name string, attrs map[string]bzl.Expr) *bzl.Rule {
-	rule := &bzl.Rule{
-		Call: &bzl.CallExpr{
-			X: &bzl.LiteralExpr{Token: rt},
+func newRule(rt, name string, attrs map[string]build.Expr) *build.Rule {
+	rule := &build.Rule{
+		Call: &build.CallExpr{
+			X: &build.LiteralExpr{Token: rt},
 		},
 	}
 	rule.SetAttr("name", asExpr(name))
@@ -273,11 +273,11 @@ func findBuildFile(pkgPath string) (bool, string) {
 
 // ReconcileRules reconciles, simplifies, and writes the rules for the specified package, adding
 // additional dependency rules as needed.
-func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dryRun bool) (bool, error) {
+func ReconcileRules(pkgPath string, rules []*build.Rule, managedAttrs []string, dryRun bool) (bool, error) {
 	_, path := findBuildFile(pkgPath)
 	info, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {
-		f := &bzl.File{}
+		f := &build.File{}
 		writeRules(f, rules)
 		return writeFile(path, f, nil, false, dryRun)
 	} else if err != nil {
@@ -290,11 +290,11 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dr
 	if err != nil {
 		return false, err
 	}
-	f, err := bzl.Parse(path, b)
+	f, err := build.Parse(path, b)
 	if err != nil {
 		return false, err
 	}
-	oldRules := make(map[string]*bzl.Rule)
+	oldRules := make(map[string]*build.Rule)
 	for _, r := range f.Rules("") {
 		oldRules[r.Name()] = r
 	}
@@ -307,7 +307,7 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dr
 		if !RuleIsManaged(o) {
 			continue
 		}
-		reconcileAttr := func(o, n *bzl.Rule, name string) {
+		reconcileAttr := func(o, n *build.Rule, name string) {
 			if e := n.Attr(name); e != nil {
 				o.SetAttr(name, e)
 			} else {
@@ -332,7 +332,7 @@ func ReconcileRules(pkgPath string, rules []*bzl.Rule, managedAttrs []string, dr
 
 // RuleIsManaged returns whether the provided rule is managed by this tool,
 // based on the tags set on the rule.
-func RuleIsManaged(r *bzl.Rule) bool {
+func RuleIsManaged(r *build.Rule) bool {
 	for _, tag := range r.AttrStrings("tags") {
 		if tag == automanagedTag {
 			return true
@@ -346,12 +346,12 @@ func RuleIsManaged(r *bzl.Rule) bool {
 // returning false if there are no changes.
 // Otherwise, returns true.
 // If dryRun is false, no files are actually changed; otherwise, the file will be written.
-func writeFile(path string, f *bzl.File, boilerplate []byte, exists, dryRun bool) (bool, error) {
-	var info bzl.RewriteInfo
-	bzl.Rewrite(f, &info)
+func writeFile(path string, f *build.File, boilerplate []byte, exists, dryRun bool) (bool, error) {
+	var info build.RewriteInfo
+	build.Rewrite(f, &info)
 	var out []byte
 	out = append(out, boilerplate...)
-	out = append(out, bzl.Format(f)...)
+	out = append(out, build.Format(f)...)
 	if exists {
 		orig, err := ioutil.ReadFile(path)
 		if err != nil {

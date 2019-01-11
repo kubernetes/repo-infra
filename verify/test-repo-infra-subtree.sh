@@ -21,13 +21,19 @@ readonly WORKSPACE="$( mktemp -d )"
 trap 'rm -rf -- "$WORKSPACE"' EXIT
 
 readonly REPO_INFRA_URL="$( git rev-parse --show-toplevel )"
-readonly REPO_INFRA_REV="$( git rev-parse HEAD )"
-readonly REPO_INFRA_REV_PARENT="$( git rev-parse HEAD^ )"
 readonly REPO_INFRA_PATH="tools/repo-infra"
+
+REPO_INFRA_REV="$( git rev-parse 'HEAD' )"
+REPO_INFRA_REV_PARENT="$( git rev-parse 'HEAD^' )"
+[ "${TRAVIS:-}" = 'true' ] && {
+  REPO_INFRA_REV="$TRAVIS_COMMIT"
+  REPO_INFRA_REV_PARENT="$( git rev-parse "${REPO_INFRA_REV}^" )"
+}
+readonly REPO_INFRA_REV REPO_INFRA_REV_PARENT
 
 export REPO_INFRA_REV
 export REPO_INFRA_URL
-export PAGER=
+unset PAGER
 
 fail() {
   echo '[FAIL]' "$@"

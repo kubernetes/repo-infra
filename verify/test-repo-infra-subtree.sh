@@ -24,13 +24,15 @@ trap 'rm -rf -- "$WORKSPACE"' EXIT
   git checkout "$BRANCH_TO_MERGE"
 }
 
-readonly REPO_INFRA_URL="$( git rev-parse --show-toplevel )"
+readonly REPO_INFRA_ROOT="$( git rev-parse --show-toplevel )"
 readonly REPO_INFRA_PATH="tools/repo-infra"
 readonly REPO_INFRA_REV="$( git rev-parse 'HEAD' )"
 readonly REPO_INFRA_REV_PARENT="$( git rev-parse 'HEAD^' )"
 
+# Will be picked up by the {verify,update}-repo-infra-subtree.sh scripts
 export REPO_INFRA_REV
-export REPO_INFRA_URL
+export REPO_INFRA_URL="$REPO_INFRA_ROOT"
+# Just print to stdout, don't use any interactive tools (less, most, ...)
 unset PAGER
 
 fail() {

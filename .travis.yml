@@ -16,6 +16,8 @@ before_install:
 install:
   - git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
   - git fetch --unshallow --tags
+  - export BRANCH_TO_MERGE="pull_req_${TRAVIS_PULL_REQUEST}_${RANDOM}"
+  - git fetch origin refs/pull/${TRAVIS_PULL_REQUEST}/head:${BRANCH_TO_MERGE}
   - sudo apt-get install bazel
   - go get -u github.com/alecthomas/gometalinter
   - go get -u github.com/bazelbuild/buildtools/buildifier

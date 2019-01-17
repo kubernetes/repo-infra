@@ -1,3 +1,5 @@
+load(":pkg.bzl", "pkg_tar")
+
 package(default_visibility = ["//visibility:public"])
 
 py_binary(
@@ -5,4 +7,9 @@ py_binary(
     srcs = [
         "gcs_uploader.py",
     ],
+)
+
+pkg_tar(
+    name = "pkg_tar_smoke",
+    srcs = glob(["*.bzl"]),
 )

@@ -48,7 +48,7 @@ class TestBoilerplate(unittest.TestCase):
         boilerplate.args = DefaultArgs()
 
     def test_boilerplate(self):
-        os.chdir("test/")
+        os.chdir("testdata/default/")
 
         # capture stdout
         old_stdout = sys.stdout
@@ -64,7 +64,7 @@ class TestBoilerplate(unittest.TestCase):
             output, ['././fail.go', '././fail.py', '././fail.sh'])
 
     def test_read_config(self):
-        config_file = "./test_with_config_file/.boilerplate.json"
+        config_file = "./testdata/with_config/.boilerplate.json"
         config = boilerplate.read_config_file(config_file)
         self.assertItemsEqual(config.get('dirs_to_skip'), [
                          'dir_to_skip', 'dont_want_this', 'not_interested', '.'])
@@ -80,7 +80,7 @@ class TestBoilerplate(unittest.TestCase):
                          boilerplate.default_skipped_not_generated)
 
     def test_read_malformed_config(self):
-        config_file = './test_with_config_file/.boilerplate.bad.json'
+        config_file = './testdata/with_config/.boilerplate.bad.json'
         with self.assertRaises(Exception):
             boilerplate.read_config_file(config_file)
 
@@ -117,7 +117,7 @@ class TestBoilerplate(unittest.TestCase):
             self.assertEqual(passes, True)
 
     def test_add_boilerplate_to_file(self):
-        with tmp_copy("./test/fail.sh", suffix='.sh') as tmp_file_name:
+        with tmp_copy("./testdata/default/fail.sh", suffix='.sh') as tmp_file_name:
             boilerplate.ensure_boilerplate_file(
                 tmp_file_name, boilerplate.get_refs(), boilerplate.get_regexs(), []
             )
@@ -157,7 +157,7 @@ class TestBoilerplate(unittest.TestCase):
         self.assertEquals(actual_match, expected_match)
 
     def test_ensure_command_line_flag(self):
-        os.chdir("./test")
+        os.chdir("./testdata/default/")
         boilerplate.args.ensure = True
 
         with function_mocker('ensure_boilerplate_file', boilerplate) as mock_args:

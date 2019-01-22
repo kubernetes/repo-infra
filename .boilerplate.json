@@ -1,8 +1,7 @@
 {
   "dirs_to_skip" : [
     "vendor",
-    "verify/boilerplate/test_with_config_file/",
-    "verify/boilerplate/test/"
+    "verify/boilerplate/testdata/"
   ],
   "not_generated_files_to_skip" : [
     "verify/boilerplate/boilerplate.py"

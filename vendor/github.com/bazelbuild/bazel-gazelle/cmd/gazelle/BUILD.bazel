@@ -12,7 +12,7 @@ go_library(
         "update-repos.go",
         "version.go",
     ],
-    importmap = "k8s.io/repo-infra/vendor/github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
+    importmap = "io_k8s_repo_infra/vendor/github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
     importpath = "github.com/bazelbuild/bazel-gazelle/cmd/gazelle",
     visibility = ["//visibility:private"],
     deps = [

@@ -3,10 +3,9 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = [
-        "klog.go",
-        "klog_file.go",
+        "fail.go",
+        "pass.go",
     ],
-    importmap = "io_k8s_repo_infra/vendor/k8s.io/klog",
-    importpath = "k8s.io/klog",
+    importpath = "k8s.io/repo-infra/verify/boilerplate/testdata/with_config",
     visibility = ["//visibility:public"],
 )

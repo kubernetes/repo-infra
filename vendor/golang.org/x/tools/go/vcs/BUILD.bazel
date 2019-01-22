@@ -8,7 +8,7 @@ go_library(
         "http.go",
         "vcs.go",
     ],
-    importmap = "k8s.io/repo-infra/vendor/golang.org/x/tools/go/vcs",
+    importmap = "io_k8s_repo_infra/vendor/golang.org/x/tools/go/vcs",
     importpath = "golang.org/x/tools/go/vcs",
     visibility = ["//visibility:public"],
 )

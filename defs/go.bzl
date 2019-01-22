@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@io_bazel_rules_go//go:def.bzl", "GoPath", "go_context", "go_path", "go_rule")
+load("@io_bazel_rules_go//go:def.bzl", "GoLibrary", "GoPath", "go_context", "go_path", "go_rule")
 
-def _compute_genrule_variables(resolved_srcs, resolved_outs):
+def _compute_genrule_variables(resolved_srcs, resolved_outs, dep_import_paths):
     variables = {
         "SRCS": cmd_helper.join_paths(" ", resolved_srcs),
         "OUTS": cmd_helper.join_paths(" ", resolved_outs),
+        "GO_IMPORT_PATHS": " ".join(dep_import_paths),
     }
     if len(resolved_srcs) == 1:
         variables["<"] = list(resolved_srcs)[0].path
@@ -28,13 +29,17 @@ def _compute_genrule_variables(resolved_srcs, resolved_outs):
 def _go_genrule_impl(ctx):
     go = go_context(ctx)
 
-    all_srcs = depset(go.stdlib.libs + go.sdk.srcs + [go.sdk.go])
+    all_srcs = depset(go.sdk.libs + go.sdk.srcs + go.sdk.tools + [go.sdk.go])
     label_dict = {}
     go_paths = []
 
     for dep in ctx.attr.srcs:
         all_srcs += dep.files
         label_dict[dep.label] = dep.files
+
+    dep_import_paths = []
+    for dep in ctx.attr.go_deps:
+        dep_import_paths.append(dep[GoLibrary].importpath)
 
     for go_path in ctx.attr.go_paths:
         all_srcs += go_path.files
@@ -54,21 +59,26 @@ def _go_genrule_impl(ctx):
     cmd = [
         "set -e",
         "export GO_GENRULE_EXECROOT=$$(pwd)",
-        # Set GOPATH and GOROOT to absolute paths so that commands can chdir without issue
+        # Set GOPATH, GOROOT, and PATH to absolute paths so that commands can chdir without issue
         "export GOPATH=" + ctx.configuration.host_path_separator.join(["$$GO_GENRULE_EXECROOT/" + p for p in go_paths]),
-        "export GOROOT=$$GO_GENRULE_EXECROOT/" + go.root,
+        "export GOROOT=$$GO_GENRULE_EXECROOT/" + go.sdk.root_file.dirname,
+        "export PATH=$$GO_GENRULE_EXECROOT/" + go.sdk.root_file.dirname + "/bin:$$PATH",
         ctx.attr.cmd.strip(" \t\n\r"),
     ]
     resolved_inputs, argv, runfiles_manifests = ctx.resolve_command(
         command = "\n".join(cmd),
         attribute = "cmd",
         expand_locations = True,
-        make_variables = _compute_genrule_variables(all_srcs, depset(ctx.outputs.outs)),
+        make_variables = _compute_genrule_variables(
+            all_srcs,
+            depset(ctx.outputs.outs),
+            dep_import_paths,
+        ),
         tools = ctx.attr.tools,
         label_dict = label_dict,
     )
 
-    paths = [go.root + "/bin", "/bin", "/usr/bin"]
+    paths = ["/bin", "/usr/bin"]
     ctx.action(
         inputs = list(all_srcs) + resolved_inputs,
         outputs = ctx.outputs.outs,
@@ -95,6 +105,7 @@ _go_genrule = go_rule(
         "outs": attr.output_list(mandatory = True),
         "cmd": attr.string(mandatory = True),
         "go_paths": attr.label_list(),
+        "go_deps": attr.label_list(providers = [GoLibrary]),
         "importpath": attr.string(),
         "message": attr.string(),
         "executable": attr.bool(default = False),
@@ -122,5 +133,6 @@ def go_genrule(name, go_deps, **kw):
     _go_genrule(
         name = name,
         go_paths = [":" + go_path_name],
+        go_deps = go_deps,
         **kw
     )

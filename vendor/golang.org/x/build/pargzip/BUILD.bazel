@@ -3,7 +3,7 @@ load("@io_bazel_rules_go//go:def.bzl", "go_library")
 go_library(
     name = "go_default_library",
     srcs = ["pargzip.go"],
-    importmap = "io_kubernetes_build/vendor/golang.org/x/build/pargzip",
+    importmap = "k8s.io/repo-infra/vendor/golang.org/x/build/pargzip",
     importpath = "golang.org/x/build/pargzip",
     visibility = ["//visibility:public"],
 )

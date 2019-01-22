@@ -21,5 +21,5 @@ load(
 # Go-based build_tar binary.
 def pkg_tar(**kwargs):
     if "build_tar" not in kwargs:
-        kwargs["build_tar"] = "@io_kubernetes_build//tools/build_tar"
+        kwargs["build_tar"] = "@io_k8s_repo_infra//tools/build_tar"
     _real_pkg_tar(**kwargs)

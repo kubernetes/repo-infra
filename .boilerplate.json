@@ -4,6 +4,7 @@
     "verify/boilerplate/testdata/"
   ],
   "not_generated_files_to_skip" : [
-    "verify/boilerplate/boilerplate.py"
+    "verify/boilerplate/boilerplate.py",
+    "kazel/generator.go"
   ]
 }

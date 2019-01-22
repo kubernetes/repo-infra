@@ -64,7 +64,7 @@ class TestBoilerplate(unittest.TestCase):
             output, ['././fail.go', '././fail.py', '././fail.sh'])
 
     def test_read_config(self):
-        config_file = "./test_with_config_file/boilerplate.json"
+        config_file = "./test_with_config_file/.boilerplate.json"
         config = boilerplate.read_config_file(config_file)
         self.assertItemsEqual(config.get('dirs_to_skip'), [
                          'dir_to_skip', 'dont_want_this', 'not_interested', '.'])
@@ -80,7 +80,7 @@ class TestBoilerplate(unittest.TestCase):
                          boilerplate.default_skipped_not_generated)
 
     def test_read_malformed_config(self):
-        config_file = './test_with_config_file/boilerplate.bad.json'
+        config_file = './test_with_config_file/.boilerplate.bad.json'
         with self.assertRaises(Exception):
             boilerplate.read_config_file(config_file)
 
@@ -90,7 +90,7 @@ class TestBoilerplate(unittest.TestCase):
             boilerplate.main()
             self.assertEqual(len(mock_args), 1)
             self.assertEqual(
-                mock_args[0][0], "/tmp/some/path/boilerplate.json")
+                mock_args[0][0], "/tmp/some/path/.boilerplate.json")
 
     def test_get_files_with_skipping_dirs(self):
         refs = boilerplate.get_refs()

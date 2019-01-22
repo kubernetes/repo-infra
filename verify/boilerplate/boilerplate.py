@@ -301,7 +301,7 @@ def get_regexs():
 
 
 def main():
-    config_file_path = os.path.join(args.rootdir, "boilerplate.json")
+    config_file_path = os.path.join(args.rootdir, ".boilerplate.json")
     config = read_config_file(config_file_path)
 
     regexs = get_regexs()

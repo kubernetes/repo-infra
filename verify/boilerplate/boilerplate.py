@@ -55,13 +55,10 @@ args = parser.parse_args()
 
 verbose_out = sys.stderr if args.verbose else open("/dev/null", "w")
 
-default_skipped_dirs = ['Godeps', 'third_party', '_gopath', '_output', '.git', 'cluster/env.sh',
-                        "vendor", "test/e2e/generated/bindata.go", "hack/boilerplate/test",
-                        "pkg/generated/bindata.go"]
+default_skipped_dirs = ['Godeps', '.git', 'vendor']
 
 # list all the files that contain 'DO NOT EDIT', but are not generated
-default_skipped_not_generated = ['hack/build-ui.sh', 'hack/lib/swagger.sh',
-                                 'hack/boilerplate/boilerplate.py']
+default_skipped_not_generated = []
 
 
 def get_refs():

@@ -109,12 +109,10 @@ def sha512sum(name, src, visibility = None):
         visibility = visibility,
     )
 
-# Creates 3+N rules based on the provided targets:
-# * A filegroup with just the provided targets (named 'name')
-# * A filegroup containing all of the md5, sha1 and sha512 hash files ('name-hashes')
-# * A filegroup containing both of the above ('name-and-hashes')
-# * All of the necessary md5sum, sha1sum and sha512sum rules
-def release_filegroup(name, srcs, visibility = None):
+# Returns a list of hash target names for the provided srcs.
+# Also updates the srcs_basenames_needing_hashes dictionary,
+# mapping src name to basename for each target in srcs.
+def _hashes_for_srcs(srcs, srcs_basenames_needing_hashes):
     hashes = []
     for src in srcs:
         parts = src.split(":")
@@ -123,23 +121,65 @@ def release_filegroup(name, srcs, visibility = None):
         else:
             basename = src.split("/")[-1]
 
-        md5sum(name = basename + ".md5", src = src, visibility = visibility)
+        srcs_basenames_needing_hashes[src] = basename
         hashes.append(basename + ".md5")
-        sha1sum(name = basename + ".sha1", src = src, visibility = visibility)
         hashes.append(basename + ".sha1")
-        sha512sum(name = basename + ".sha512", src = src, visibility = visibility)
         hashes.append(basename + ".sha512")
+    return hashes
 
-    native.filegroup(
-        name = name,
-        srcs = srcs,
-        visibility = visibility,
-    )
-    native.filegroup(
-        name = name + "-hashes",
-        srcs = hashes,
-        visibility = visibility,
-    )
+# Creates 3+N rules based on the provided targets:
+# * A filegroup with just the provided targets (named 'name')
+# * A filegroup containing all of the md5, sha1 and sha512 hash files ('name-hashes')
+# * A filegroup containing both of the above ('name-and-hashes')
+# * All of the necessary md5sum, sha1sum and sha512sum rules
+#
+# The targets are specified using the srcs and conditioned_srcs attributes.
+# srcs is expected to be label list.
+# conditioned_srcs is a dictionary mapping conditions to label lists.
+#   It will be passed to select().
+def release_filegroup(name, srcs = None, conditioned_srcs = None, visibility = None):
+    if not srcs and not conditioned_srcs:
+        fail("srcs and conditioned_srcs cannot both be empty")
+    srcs = srcs or []
+
+    # A given src may occur in multiple conditioned_srcs, but we want to create the hash
+    # rules only once, so use a dictionary to deduplicate.
+    srcs_basenames_needing_hashes = {}
+
+    hashes = _hashes_for_srcs(srcs, srcs_basenames_needing_hashes)
+    conditioned_hashes = {}
+    if conditioned_srcs:
+        for condition, csrcs in conditioned_srcs.items():
+            conditioned_hashes[condition] = _hashes_for_srcs(csrcs, srcs_basenames_needing_hashes)
+
+    for src, basename in srcs_basenames_needing_hashes.items():
+        md5sum(name = basename + ".md5", src = src, visibility = visibility)
+        sha1sum(name = basename + ".sha1", src = src, visibility = visibility)
+        sha512sum(name = basename + ".sha512", src = src, visibility = visibility)
+
+    if conditioned_srcs:
+        native.filegroup(
+            name = name,
+            srcs = srcs + select(conditioned_srcs),
+            visibility = visibility,
+        )
+        native.filegroup(
+            name = name + "-hashes",
+            srcs = hashes + select(conditioned_hashes),
+            visibility = visibility,
+        )
+    else:
+        native.filegroup(
+            name = name,
+            srcs = srcs,
+            visibility = visibility,
+        )
+        native.filegroup(
+            name = name + "-hashes",
+            srcs = hashes,
+            visibility = visibility,
+        )
+
     native.filegroup(
         name = name + "-and-hashes",
         srcs = [name, name + "-hashes"],

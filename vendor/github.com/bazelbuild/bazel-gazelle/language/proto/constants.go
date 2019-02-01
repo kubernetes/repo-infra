@@ -1,4 +1,4 @@
-/* Copyright 2016 The Bazel Authors. All rights reserved.
+/* Copyright 2018 The Bazel Authors. All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,21 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package proto
 
-import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
+const (
+	// PackageInfoKey is the name of a private attribute set on generated
+	// proto_library rules. This attribute contains a Package record which
+	// describes the library and its sources.
+	PackageKey = "_package"
 
-	"github.com/bazelbuild/bazel-gazelle/config"
-	"github.com/bazelbuild/bazel-gazelle/rule"
+	// wellKnownTypesGoPrefix is the import path for the Go repository containing
+	// pre-generated code for the Well Known Types.
+	wellKnownTypesGoPrefix = "github.com/golang/protobuf"
 )
-
-func fixFile(c *config.Config, f *rule.File) error {
-	outPath := findOutputPath(c, f)
-	if err := os.MkdirAll(filepath.Dir(outPath), 0777); err != nil {
-		return err
-	}
-	return ioutil.WriteFile(outPath, f.Format(), 0666)
-}

@@ -71,42 +71,36 @@ gcs_upload = rule(
 )
 
 # Computes the md5sum of the provided src file, saving it in a file named 'name'.
-def md5sum(name, src, visibility = None):
+def md5sum(name, src, **kwargs):
     native.genrule(
         name = name + "_genmd5sum",
         srcs = [src],
         outs = [name],
-        # Currently each go_binary target has two outputs (the binary and the library),
-        # so we hash both but only save the hash for the binary.
-        cmd = "for f in $(SRCS); do if command -v md5 >/dev/null; then md5 -q $$f>$@; else md5sum $$f | awk '{print $$1}' > $@; fi; done",
+        cmd = "command -v md5 >/dev/null && cmd='md5 -q' || cmd=md5sum; $$cmd $< >$@",
         message = "Computing md5sum",
-        visibility = visibility,
+        **kwargs
     )
 
 # Computes the sha1sum of the provided src file, saving it in a file named 'name'.
-def sha1sum(name, src, visibility = None):
+def sha1sum(name, src, **kwargs):
     native.genrule(
         name = name + "_gensha1sum",
         srcs = [src],
         outs = [name],
-        # Currently each go_binary target has two outputs (the binary and the library),
-        # so we hash both but only save the hash for the binary.
-        cmd = "command -v sha1sum >/dev/null && cmd=sha1sum || cmd='shasum -a1'; for f in $(SRCS); do $$cmd $$f | awk '{print $$1}' > $@; done",
+        cmd = "command -v sha1sum >/dev/null && cmd=sha1sum || cmd='shasum -a1'; $$cmd $< >$@",
         message = "Computing sha1sum",
-        visibility = visibility,
+        **kwargs
     )
 
 # Computes the sha512sum of the provided src file, saving it in a file named 'name'.
-def sha512sum(name, src, visibility = None):
+def sha512sum(name, src, **kwargs):
     native.genrule(
         name = name + "_gensha512sum",
         srcs = [src],
         outs = [name],
-        # Currently each go_binary target has two outputs (the binary and the library),
-        # so we hash both but only save the hash for the binary.
-        cmd = "command -v sha512sum >/dev/null && cmd=sha512sum || cmd='shasum -a512'; for f in $(SRCS); do $$cmd $$f | awk '{print $$1}' > $@; done",
+        cmd = "command -v sha512sum >/dev/null && cmd=sha512sum || cmd='shasum -a512'; $$cmd $< >$@",
         message = "Computing sha512sum",
-        visibility = visibility,
+        **kwargs
     )
 
 # Returns a list of hash target names for the provided srcs.
@@ -137,7 +131,7 @@ def _hashes_for_srcs(srcs, srcs_basenames_needing_hashes):
 # srcs is expected to be label list.
 # conditioned_srcs is a dictionary mapping conditions to label lists.
 #   It will be passed to select().
-def release_filegroup(name, srcs = None, conditioned_srcs = None, visibility = None):
+def release_filegroup(name, srcs = None, conditioned_srcs = None, tags = None, visibility = None, **kwargs):
     if not srcs and not conditioned_srcs:
         fail("srcs and conditioned_srcs cannot both be empty")
     srcs = srcs or []
@@ -152,36 +146,47 @@ def release_filegroup(name, srcs = None, conditioned_srcs = None, visibility = N
         for condition, csrcs in conditioned_srcs.items():
             conditioned_hashes[condition] = _hashes_for_srcs(csrcs, srcs_basenames_needing_hashes)
 
+    hash_tags = tags or []
+    hash_tags.append("manual")
     for src, basename in srcs_basenames_needing_hashes.items():
-        md5sum(name = basename + ".md5", src = src, visibility = visibility)
-        sha1sum(name = basename + ".sha1", src = src, visibility = visibility)
-        sha512sum(name = basename + ".sha512", src = src, visibility = visibility)
+        md5sum(name = basename + ".md5", src = src, tags = hash_tags, visibility = visibility)
+        sha1sum(name = basename + ".sha1", src = src, tags = hash_tags, visibility = visibility)
+        sha512sum(name = basename + ".sha512", src = src, tags = hash_tags, visibility = visibility)
 
     if conditioned_srcs:
         native.filegroup(
             name = name,
             srcs = srcs + select(conditioned_srcs),
-            visibility = visibility,
+            tags = tags,
+            **kwargs
         )
         native.filegroup(
             name = name + "-hashes",
             srcs = hashes + select(conditioned_hashes),
+            tags = tags,
             visibility = visibility,
+            **kwargs
         )
     else:
         native.filegroup(
             name = name,
             srcs = srcs,
+            tags = tags,
             visibility = visibility,
+            **kwargs
         )
         native.filegroup(
             name = name + "-hashes",
             srcs = hashes,
+            tags = tags,
             visibility = visibility,
+            **kwargs
         )
 
     native.filegroup(
         name = name + "-and-hashes",
         srcs = [name, name + "-hashes"],
+        tags = tags,
         visibility = visibility,
+        **kwargs
     )

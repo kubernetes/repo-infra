@@ -76,7 +76,7 @@ def md5sum(name, src, **kwargs):
         name = name + "_genmd5sum",
         srcs = [src],
         outs = [name],
-        cmd = "command -v md5 >/dev/null && cmd='md5 -q' || cmd=md5sum; $$cmd $< >$@",
+        cmd = "command -v md5 >/dev/null && cmd='md5 -q' || cmd=md5sum; $$cmd $< | awk '{print $$1}' >$@",
         message = "Computing md5sum",
         **kwargs
     )
@@ -87,7 +87,7 @@ def sha1sum(name, src, **kwargs):
         name = name + "_gensha1sum",
         srcs = [src],
         outs = [name],
-        cmd = "command -v sha1sum >/dev/null && cmd=sha1sum || cmd='shasum -a1'; $$cmd $< >$@",
+        cmd = "command -v sha1sum >/dev/null && cmd=sha1sum || cmd='shasum -a1'; $$cmd $< | awk '{print $$1}' >$@",
         message = "Computing sha1sum",
         **kwargs
     )
@@ -98,7 +98,7 @@ def sha512sum(name, src, **kwargs):
         name = name + "_gensha512sum",
         srcs = [src],
         outs = [name],
-        cmd = "command -v sha512sum >/dev/null && cmd=sha512sum || cmd='shasum -a512'; $$cmd $< >$@",
+        cmd = "command -v sha512sum >/dev/null && cmd=sha512sum || cmd='shasum -a512'; $$cmd $< | awk '{print $$1}' >$@",
         message = "Computing sha512sum",
         **kwargs
     )

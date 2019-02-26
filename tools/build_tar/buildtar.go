@@ -374,6 +374,9 @@ func (f *tarFile) makeDirs(header tar.Header) error {
 			continue
 		}
 		dh := header
+		// Add the x bit to directories if the read bit is set,
+		// and make sure all directories are at least user RWX.
+		dh.Mode = header.Mode | 0700 | ((0444 & header.Mode) >> 2)
 		dh.Typeflag = tar.TypeDir
 		dh.Name = dir + "/"
 		if err := f.tw.WriteHeader(&dh); err != nil {

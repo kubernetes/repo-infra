@@ -5,6 +5,7 @@
   ],
   "not_generated_files_to_skip" : [
     "verify/boilerplate/boilerplate.py",
-    "kazel/generator.go"
+    "kazel/generator.go",
+    "tools/generate_crosstool/main.go"
   ]
 }

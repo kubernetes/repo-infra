@@ -77,7 +77,7 @@ func main() {
 	flag.StringVar(&ownerName, "owner_name", "", "Specify the owner name of all files, e.g. root.root.")
 	flag.Var(&ownerNames, "owner_names", "Specify the owner names of individual files, e.g. path/to/file=root.root.")
 
-	flag.Set("alsologtostderr", "true")
+	flag.Set("logtostderr", "true")
 
 	flag.Parse()
 
@@ -140,8 +140,9 @@ type tarFile struct {
 
 	tw *tar.Writer
 
-	meta     fileMeta
-	dirsMade map[string]struct{}
+	meta      fileMeta
+	dirsMade  map[string]struct{}
+	filesMade map[string]struct{}
 
 	closers []func()
 }
@@ -185,6 +186,7 @@ func newTarFile(output, directory, compression string, meta fileMeta) (*tarFile,
 		closers:   closers,
 		meta:      meta,
 		dirsMade:  map[string]struct{}{},
+		filesMade: map[string]struct{}{},
 	}, nil
 }
 
@@ -199,6 +201,11 @@ func (f *tarFile) addFile(file, dest string) error {
 
 	dest = filepath.Join(strings.TrimLeft(f.directory, "/"), dest)
 	dest = filepath.Clean(dest)
+
+	if ok := f.tryReservePath(dest); !ok {
+		klog.Warningf("Duplicate file in archive: %v, picking first occurence", dest)
+		return nil
+	}
 
 	info, err := os.Stat(file)
 	if err != nil {
@@ -261,6 +268,10 @@ func (f *tarFile) addFile(file, dest string) error {
 }
 
 func (f *tarFile) addLink(symlink, target string) error {
+	if ok := f.tryReservePath(symlink); !ok {
+		klog.Warningf("Duplicate file in archive: %v, picking first occurence", symlink)
+		return nil
+	}
 	header := tar.Header{
 		Name:     symlink,
 		Typeflag: tar.TypeSymlink,
@@ -317,6 +328,9 @@ func (f *tarFile) addTar(toAdd string) error {
 		header.Name = filepath.Join(root, header.Name)
 		if header.Typeflag == tar.TypeDir && !strings.HasSuffix(header.Name, "/") {
 			header.Name = header.Name + "/"
+		} else if ok := f.tryReservePath(header.Name); !ok {
+			klog.Warningf("Duplicate file in archive: %v, picking first occurence", header.Name)
+			continue
 		}
 		// Create root directories with same permissions if missing.
 		// makeDirs keeps track of which directories exist,
@@ -360,6 +374,9 @@ func (f *tarFile) makeDirs(header tar.Header) error {
 			continue
 		}
 		dh := header
+		// Add the x bit to directories if the read bit is set,
+		// and make sure all directories are at least user RWX.
+		dh.Mode = header.Mode | 0700 | ((0444 & header.Mode) >> 2)
 		dh.Typeflag = tar.TypeDir
 		dh.Name = dir + "/"
 		if err := f.tw.WriteHeader(&dh); err != nil {
@@ -369,6 +386,17 @@ func (f *tarFile) makeDirs(header tar.Header) error {
 		f.dirsMade[dir] = struct{}{}
 	}
 	return nil
+}
+
+func (f *tarFile) tryReservePath(path string) bool {
+	if _, ok := f.filesMade[path]; ok {
+		return false
+	}
+	if _, ok := f.dirsMade[path]; ok {
+		return false
+	}
+	f.filesMade[path] = struct{}{}
+	return true
 }
 
 func (f *tarFile) Close() {

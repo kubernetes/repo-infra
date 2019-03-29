@@ -21,7 +21,4 @@ package hack
 // Add tools that hack scripts depend on here, to ensure they are vendored.
 import (
 	_ "github.com/bazelbuild/bazel-gazelle/cmd/gazelle"
-	// TODO(fejta): stop using travis
-	// _ "github.com/alecthomas/gometalinter"
-	// _ "github.com/bazelbuild/buildtools/buildifier"
 )

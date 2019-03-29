@@ -15,28 +15,6 @@ before_install:
 
 install:
   - sudo apt-get install bazel
-  # TODO(fejta): vendor these things as go modules
-  - go get -u github.com/alecthomas/gometalinter
-  - go get -u github.com/bazelbuild/buildtools/buildifier
-  - gometalinter --install
 
 script:
-  # Build first since we need the generated protobuf for the govet checks
-  - bazel build --config=ci //...
   - ./hack/verify-all.sh
-  - buildifier -mode=check $(find . -name BUILD -o -name '*.bzl' -type f -not -wholename '*/vendor/*')
-  - gometalinter --deadline="${GOMETALINTER_DEADLINE:-180s}" --vendor \
-      --cyclo-over=50 --dupl-threshold=100 \
-      --exclude=".*should not use dot imports \(golint\)$" \
-      --disable-all \
-      --enable=vet \
-      --enable=deadcode \
-      --enable=golint \
-      --enable=vetshadow \
-      --enable=gocyclo \
-      --skip=.git \
-      --skip=.tool \
-      --skip=vendor \
-      --tests \
-      ./...
-  - bazel test --config=ci //...

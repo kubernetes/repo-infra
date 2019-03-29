@@ -24,8 +24,8 @@ set -o nounset
 set -o pipefail
 
 BASE=$(pwd)
-cd $(dirname $(readlink {root_file}))
-"$BASE/{cmd}" $@
+cd "$(dirname "$(readlink {root_file})")"
+"$BASE/{cmd}" "$@"
 """.format(
         cmd = ctx.file.cmd.short_path,
         root_file = ctx.file.root_file.short_path,
@@ -75,7 +75,7 @@ def workspace_binary(
         cmd,
         args = None,
         visibility = None,
-        root_file = "//:WORKSPACE"):
+        root_file = "@//:WORKSPACE"):
     script_name = name + "_script"
     _workspace_binary_script(
         name = script_name,

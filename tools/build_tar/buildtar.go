@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/build/pargzip"
 
@@ -56,6 +57,8 @@ func main() {
 		owners     multiString
 		ownerName  string
 		ownerNames multiString
+
+		mtime string
 	)
 
 	flag.StringVar(&flagfile, "flagfile", "", "Path to flagfile")
@@ -77,6 +80,9 @@ func main() {
 	flag.StringVar(&ownerName, "owner_name", "", "Specify the owner name of all files, e.g. root.root.")
 	flag.Var(&ownerNames, "owner_names", "Specify the owner names of individual files, e.g. path/to/file=root.root.")
 
+	flag.StringVar(&mtime, "mtime", "",
+		"mtime to set on tar file entries. May be an integer (corresponding to epoch seconds) or the value \"portable\", which will use the value 2000-01-01, usable with non *nix OSes")
+
 	flag.Set("logtostderr", "true")
 
 	flag.Parse()
@@ -94,7 +100,12 @@ func main() {
 		klog.Fatalf("--output flag is required")
 	}
 
-	meta := newFileMeta(mode, modes, owner, owners, ownerName, ownerNames)
+	parsedMtime, err := parseMtimeFlag(mtime)
+	if err != nil {
+		klog.Fatalf("invalid value for --mtime: %s", mtime)
+	}
+
+	meta := newFileMeta(mode, modes, owner, owners, ownerName, ownerNames, parsedMtime)
 
 	tf, err := newTarFile(output, directory, compression, meta)
 	if err != nil {
@@ -222,13 +233,14 @@ func (f *tarFile) addFile(file, dest string) error {
 	}
 
 	header := tar.Header{
-		Name:  dest,
-		Mode:  int64(mode),
-		Uid:   uid,
-		Gid:   gid,
-		Size:  0,
-		Uname: uname,
-		Gname: gname,
+		Name:    dest,
+		Mode:    int64(mode),
+		Uid:     uid,
+		Gid:     gid,
+		Size:    0,
+		Uname:   uname,
+		Gname:   gname,
+		ModTime: f.meta.modTime,
 	}
 
 	if err := f.makeDirs(header); err != nil {
@@ -276,6 +288,7 @@ func (f *tarFile) addLink(symlink, target string) error {
 		Name:     symlink,
 		Typeflag: tar.TypeSymlink,
 		Linkname: target,
+		ModTime:  f.meta.modTime,
 	}
 	if err := f.makeDirs(header); err != nil {
 		return err
@@ -405,6 +418,27 @@ func (f *tarFile) Close() {
 	}
 }
 
+// parseMtimeFlag matches the functionality of Bazel's python-based build_tar and archive modules
+// for the --mtime flag.
+// In particular:
+// - if no value is provided, use the Unix epoch
+// - if the string "portable" is provided, use a "deterministic date compatible with non *nix OSes"
+// - if an integer is provided, interpret that as the number of seconds since Unix epoch
+func parseMtimeFlag(input string) (time.Time, error) {
+	if input == "" {
+		return time.Unix(0, 0), nil
+	} else if input == "portable" {
+		// A deterministic time compatible with non *nix OSes.
+		// See also https://github.com/bazelbuild/bazel/issues/1299.
+		return time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC), nil
+	}
+	seconds, err := strconv.ParseInt(input, 10, 64)
+	if err != nil {
+		return time.Unix(0, 0), err
+	}
+	return time.Unix(seconds, 0), nil
+}
+
 func newFileMeta(
 	mode string,
 	modes multiString,
@@ -412,8 +446,11 @@ func newFileMeta(
 	owners multiString,
 	ownerName string,
 	ownerNames multiString,
+	modTime time.Time,
 ) fileMeta {
-	var meta fileMeta
+	meta := fileMeta{
+		modTime: modTime,
+	}
 
 	if mode != "" {
 		i, err := strconv.ParseUint(mode, 8, 32)
@@ -522,6 +559,8 @@ type fileMeta struct {
 
 	defaultMode os.FileMode
 	modeMap     map[string]os.FileMode
+
+	modTime time.Time
 }
 
 func (f *fileMeta) getGID(fname string) int {

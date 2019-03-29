@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,17 +18,10 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-gometalinter --deadline="${GOMETALINTER_DEADLINE:-180s}" --vendor \
-    --cyclo-over=50 --dupl-threshold=100 \
-    --exclude=".*should not use dot imports \(golint\)$" \
-    --disable-all \
-    --enable=vet \
-    --enable=deadcode \
-    --enable=golint \
-    --enable=vetshadow \
-    --enable=gocyclo \
-    --skip=.git \
-    --skip=.tool \
-    --skip=vendor \
-    --tests \
-    ./...
+cmd="bazel run //:gofmt --"
+if ! which bazel &> /dev/null; then
+  echo "Bazel is the preferred way to build and test the test-infra repo." >&2
+  echo "Please install bazel at https://bazel.build/ (future commits may require it)" >&2
+  cmd="gofmt"
+fi
+find . -name "*.go" | grep -v "\/vendor\/" | xargs ${cmd} -s -w

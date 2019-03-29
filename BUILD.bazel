@@ -1,4 +1,6 @@
 # gazelle:prefix k8s.io/repo-infra
+# gazelle:proto disable_global
+# gazelle:exclude hack
 
 # Use the Bazel-vendored protobuf library since we use go_proto_library
 # gazelle:resolve go github.com/golang/protobuf/proto @com_github_golang_protobuf//proto:go_default_library
@@ -6,3 +8,61 @@
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+load("//defs:run_in_workspace.bzl", "workspace_binary")
+
+workspace_binary(
+    name = "go",
+    cmd = "@go_sdk//:bin/go",
+)
+
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+GAZELLE_CMD = "//vendor/github.com/bazelbuild/bazel-gazelle/cmd/gazelle"
+
+KAZEL_CMD = "//kazel"
+
+# Need to use the build-in version for the initial run
+gazelle(
+    name = "gazelle-bootstrap",
+    command = "fix",
+    external = "vendored",
+)
+
+gazelle(
+    name = "gazelle",
+    command = "fix",
+    external = "vendored",
+    gazelle = GAZELLE_CMD,
+)
+
+gazelle(
+    name = "gazelle-diff",
+    command = "fix",
+    external = "vendored",
+    gazelle = GAZELLE_CMD,
+    mode = "diff",
+)
+
+workspace_binary(
+    name = "kazel-bin",  # kazel conflicts with //kazel
+    args = [
+        "--cfg-path=./hack/.kazelcfg.json",
+    ],
+    cmd = KAZEL_CMD,
+)
+
+workspace_binary(
+    name = "kazel-diff",
+    args = [
+        "--dry-run",
+        "--print-diff",
+        "--cfg-path=./hack/.kazelcfg.json",
+    ],
+    cmd = KAZEL_CMD,
+)
+
+workspace_binary(
+    name = "gofmt",
+    cmd = "@go_sdk//:bin/gofmt",
+)

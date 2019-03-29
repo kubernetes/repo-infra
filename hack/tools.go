@@ -1,7 +1,5 @@
 /*
-Copyright 2014 The Kubernetes Authors.
-
-fail
+Copyright 2019 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,4 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package test
+package hack
+
+// +build tools
+
+// Add tools that hack scripts depend on here, to ensure they are vendored.
+import (
+	_ "github.com/bazelbuild/bazel-gazelle/cmd/gazelle"
+	// TODO(fejta): stop using travis
+	// _ "github.com/alecthomas/gometalinter"
+	// _ "github.com/bazelbuild/buildtools/buildifier"
+)

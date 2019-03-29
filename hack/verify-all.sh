@@ -1,5 +1,5 @@
-#!/bin/bash
-# Copyright 2017 The Kubernetes Authors.
+#!/usr/bin/env bash
+# Copyright 2019 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,18 +17,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-find_files() {
-  find . -not \( \
-      \( \
-        -wholename '*/vendor/*' \
-      \) -prune \
-    \) -name '*.go'
-}
-
-GOFMT="gofmt -s"
-bad_files=$(find_files | xargs $GOFMT -l)
-if [[ -n "${bad_files}" ]]; then
-  echo "!!! '$GOFMT' needs to be run on the following files: "
-  echo "${bad_files}"
-  exit 1
+cd "$(git rev-parse --show-toplevel)"
+errs=()
+for sh in $(ls hack/verify* | grep -v verify-all); do
+  "./$sh" && echo "PASS: $sh" && continue
+  echo "FAIL: $sh"
+  errs+=("$sh")
+done
+if [[ ${#errs[@]} -eq 0 ]]; then
+  echo "PASS"
+  exit 0
 fi
+echo "FAILED ${#errs[@]} checks:" >&2
+for e in "${errs[@]}"; do
+  echo "  $e" >&2
+done
+exit 1

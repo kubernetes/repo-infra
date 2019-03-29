@@ -17,28 +17,4 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-REPOINFRA_ROOT=$(git rev-parse --show-toplevel)
-# https://github.com/kubernetes/test-infra/issues/5699#issuecomment-348350792
-cd ${REPOINFRA_ROOT}
-
-OUTPUT_GOBIN="${REPOINFRA_ROOT}/_output/bin"
-GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/bazelbuild/bazel-gazelle/cmd/gazelle
-GOBIN="${OUTPUT_GOBIN}" go install ./kazel
-
-touch "${REPOINFRA_ROOT}/vendor/BUILD.bazel"
-
-gazelle_diff=$("${OUTPUT_GOBIN}/gazelle" fix \
-  -external=vendored \
-  -mode=diff)
-
-kazel_diff=$("${OUTPUT_GOBIN}/kazel" \
-  -dry-run \
-  -print-diff)
-
-if [[ -n "${gazelle_diff}" || -n "${kazel_diff}" ]]; then
-  echo "${gazelle_diff}"
-  echo "${kazel_diff}"
-  echo
-  echo "Run ./verify/update-bazel.sh"
-  exit 1
-fi
+"$(dirname "$0")/../hack/verify-bazel.sh" "$@"

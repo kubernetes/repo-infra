@@ -242,6 +242,9 @@ func (f *tarFile) addFile(file, dest string) error {
 		Gname:   gname,
 		ModTime: f.meta.modTime,
 	}
+	if m := f.meta.mtime; !m.IsZero() {
+		header.ModTime = m
+	}
 
 	if err := f.makeDirs(header); err != nil {
 		return err

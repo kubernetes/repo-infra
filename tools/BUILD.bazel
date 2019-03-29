@@ -9,7 +9,7 @@
 genrule(
     name = "gen_crosstool",
     # This is a proto, not a bzl file, but close enough.
-    srcs = ["//verify/boilerplate:boilerplate.bzl.txt"],
+    srcs = ["//hack/boilerplate:boilerplate.bzl.txt"],
     outs = ["generated_CROSSTOOL.textpb"],
     cmd = "$(location //tools/generate_crosstool) --boilerplate=$< --out=$@",
     tools = ["//tools/generate_crosstool"],

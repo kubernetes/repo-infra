@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/build/pargzip"
 
@@ -56,6 +57,8 @@ func main() {
 		owners     multiString
 		ownerName  string
 		ownerNames multiString
+
+		mtime timeString
 	)
 
 	flag.StringVar(&flagfile, "flagfile", "", "Path to flagfile")
@@ -77,6 +80,8 @@ func main() {
 	flag.StringVar(&ownerName, "owner_name", "", "Specify the owner name of all files, e.g. root.root.")
 	flag.Var(&ownerNames, "owner_names", "Specify the owner names of individual files, e.g. path/to/file=root.root.")
 
+	flag.Var(&mtime, "mtime", "Set mtime on tar file entries. May be an integer or the value 'portable' to get the value 2000-01-01, which is usable with non *nix OSes")
+
 	flag.Set("logtostderr", "true")
 
 	flag.Parse()
@@ -94,7 +99,7 @@ func main() {
 		klog.Fatalf("--output flag is required")
 	}
 
-	meta := newFileMeta(mode, modes, owner, owners, ownerName, ownerNames)
+	meta := newFileMeta(mode, modes, owner, owners, ownerName, ownerNames, mtime)
 
 	tf, err := newTarFile(output, directory, compression, meta)
 	if err != nil {
@@ -222,13 +227,14 @@ func (f *tarFile) addFile(file, dest string) error {
 	}
 
 	header := tar.Header{
-		Name:  dest,
-		Mode:  int64(mode),
-		Uid:   uid,
-		Gid:   gid,
-		Size:  0,
-		Uname: uname,
-		Gname: gname,
+		Name:    dest,
+		Mode:    int64(mode),
+		Uid:     uid,
+		Gid:     gid,
+		Size:    0,
+		Uname:   uname,
+		Gname:   gname,
+		ModTime: f.meta.mtime,
 	}
 
 	if err := f.makeDirs(header); err != nil {
@@ -276,6 +282,7 @@ func (f *tarFile) addLink(symlink, target string) error {
 		Name:     symlink,
 		Typeflag: tar.TypeSymlink,
 		Linkname: target,
+		ModTime:  f.meta.mtime,
 	}
 	if err := f.makeDirs(header); err != nil {
 		return err
@@ -412,6 +419,7 @@ func newFileMeta(
 	owners multiString,
 	ownerName string,
 	ownerNames multiString,
+	mtime timeString,
 ) fileMeta {
 	var meta fileMeta
 
@@ -510,6 +518,8 @@ func newFileMeta(
 		meta.gidMap[filename] = gid
 	}
 
+	meta.mtime = time.Time(mtime)
+
 	return meta
 }
 
@@ -522,6 +532,8 @@ type fileMeta struct {
 
 	defaultMode os.FileMode
 	modeMap     map[string]os.FileMode
+
+	mtime time.Time
 }
 
 func (f *fileMeta) getGID(fname string) int {
@@ -557,6 +569,38 @@ func (f *fileMeta) getMode(fname string) os.FileMode {
 		return mode
 	}
 	return f.defaultMode
+}
+
+type timeString time.Time
+
+var y2k = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+
+const portableTime = "portable"
+
+func (ts *timeString) String() string {
+	t := time.Time(*ts)
+	if t.Equal(y2k) {
+		return portableTime
+	}
+	return strconv.FormatInt(t.Unix(), 10)
+}
+
+func (ts *timeString) Set(v string) error {
+	var t time.Time
+	switch v {
+	case "":
+		// Use zero
+	case portableTime:
+		*ts = timeString(y2k)
+	default:
+		unix, err := strconv.ParseInt(v, 10, 64)
+		if err != nil {
+			return fmt.Errorf("not an integer or %s: %v", portableTime, v)
+		}
+		t = time.Unix(unix, 0)
+	}
+	*ts = timeString(t)
+	return nil
 }
 
 type multiString []string

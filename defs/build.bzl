@@ -17,21 +17,21 @@ def _gcs_upload_impl(ctx):
     for t in ctx.attr.data:
         label = str(t.label)
         upload_path = ctx.attr.upload_paths.get(label, "")
-        for f in t.files:
+        for f in t.files.to_list():
             output_lines.append("%s\t%s" % (f.short_path, upload_path))
 
-    ctx.file_action(
+    ctx.actions.write(
         output = ctx.outputs.targets,
         content = "\n".join(output_lines),
     )
 
-    ctx.file_action(
+    ctx.actions.write(
         content = "%s --manifest %s --root $PWD -- $@" % (
             ctx.attr.uploader.files_to_run.executable.short_path,
             ctx.outputs.targets.short_path,
         ),
         output = ctx.outputs.executable,
-        executable = True,
+        is_executable = True,
     )
 
     return struct(

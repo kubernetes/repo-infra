@@ -3,6 +3,7 @@ load(":build.bzl", "release_filegroup")
 
 py_binary(
     name = "gcs_uploader",
+    python_version = "PY2",
     srcs = [
         "gcs_uploader.py",
     ],

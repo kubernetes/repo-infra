@@ -288,6 +288,7 @@ func (f *tarFile) addLink(symlink, target string) error {
 		Name:     symlink,
 		Typeflag: tar.TypeSymlink,
 		Linkname: target,
+		Mode:     int64(0777), // symlinks should always have 0777 mode
 		ModTime:  f.meta.modTime,
 	}
 	if err := f.makeDirs(header); err != nil {

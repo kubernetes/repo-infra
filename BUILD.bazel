@@ -6,3 +6,20 @@
 package(default_visibility = ["//visibility:public"])
 
 licenses(["notice"])
+
+load("//defs:run_in_workspace.bzl", "workspace_binary")
+
+workspace_binary(
+    name = "gofmt",
+    cmd = "@go_sdk//:bin/gofmt",
+)
+
+workspace_binary(
+    name = "go",
+    cmd = "@go_sdk//:bin/go",
+)
+
+workspace_binary(
+    name = "kazel",
+    cmd = "//cmd/kazel",
+)

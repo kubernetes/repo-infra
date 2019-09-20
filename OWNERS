@@ -1,4 +1,7 @@
 approvers:
+- clarketm
 - fejta
-- ixdy
 - mikedanese
+
+emeritus_approvers:
+- ixdy

@@ -34,6 +34,7 @@ echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" |
 curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
 sudo apt-get update
 sudo apt-get install bazel
+export GO111MODULE=off
 go get -u github.com/alecthomas/gometalinter
 go get -u github.com/bazelbuild/buildtools/buildifier
 gometalinter --install

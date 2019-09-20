@@ -23,7 +23,7 @@ cd ${REPOINFRA_ROOT}
 
 OUTPUT_GOBIN="${REPOINFRA_ROOT}/_output/bin"
 GOBIN="${OUTPUT_GOBIN}" go install ./vendor/github.com/bazelbuild/bazel-gazelle/cmd/gazelle
-GOBIN="${OUTPUT_GOBIN}" go install ./kazel
+GOBIN="${OUTPUT_GOBIN}" go install ./cmd/kazel
 
 touch "${REPOINFRA_ROOT}/vendor/BUILD.bazel"
 

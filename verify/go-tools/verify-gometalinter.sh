@@ -16,18 +16,7 @@
 set -o errexit
 set -o nounset
 set -o pipefail
+set -o xtrace
 
-gometalinter --deadline="${GOMETALINTER_DEADLINE:-180s}" --vendor \
-    --cyclo-over=50 --dupl-threshold=100 \
-    --exclude=".*should not use dot imports \(golint\)$" \
-    --disable-all \
-    --enable=vet \
-    --enable=deadcode \
-    --enable=golint \
-    --enable=vetshadow \
-    --enable=gocyclo \
-    --skip=.git \
-    --skip=.tool \
-    --skip=vendor \
-    --tests \
-    ./...
+export GO111MODULE=on
+golangci-lint run

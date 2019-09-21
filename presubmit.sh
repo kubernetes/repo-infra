@@ -40,10 +40,9 @@ else
   export GOPATH=$GOPATH:/go  # prow hack
 fi
 
+GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.18.0
 export GO111MODULE=off
-go get -u github.com/alecthomas/gometalinter
 go get -u github.com/bazelbuild/buildtools/buildifier
-gometalinter --install
 # Build first since we need the generated protobuf for the govet checks
 bazel build --config=ci //...
 ./verify/verify-boilerplate.sh --rootdir="$(pwd)" -v

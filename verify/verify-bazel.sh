@@ -18,8 +18,8 @@ set -o nounset
 set -o pipefail
 
 cd $(git rev-parse --show-toplevel)
-gazelle_diff=$(bazel run //:gazelle -- fix -mode=diff)
-kazel_diff=$(bazel run //:kazel -- -dry-run -print-diff --cfg-path=./.kazelcfg.json)
+gazelle_diff=$(bazel run //:gazelle -- fix -mode=diff || echo FAILED gazelle)
+kazel_diff=$(bazel run //:kazel -- -dry-run -print-diff --cfg-path=./.kazelcfg.json || echo FAILED kazel)
 
 if [[ -n "${gazelle_diff}" || -n "${kazel_diff}" ]]; then
   echo "${gazelle_diff}"

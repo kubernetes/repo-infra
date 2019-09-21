@@ -23,12 +23,19 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-BASE=$(pwd)
-cd $(dirname $(readlink {root_file}))
-"$BASE/{cmd}" $@
+if [[ -n "${{BUILD_WORKSPACE_DIRECTORY:-}}" ]]; then
+  # Running from inside bazel
+  cd "${{BUILD_WORKSPACE_DIRECTORY}}"
+else
+  # Running from bazel-bin
+  cd "$(git rev-parse --show-toplevel)"
+fi
+# bazel-repo-infra will handle both external and local binaries, aka
+# bazel-repo-infra/external/go_sdk/bin/go
+# bazel-repo-infra/bazel-out/k8-fastbuild/bin/cmd/kazel/linux_amd64_stripped/kazel
+"bazel-${{PWD##*/}}/{cmd}" "$@"
 """.format(
-        cmd = ctx.file.cmd.short_path,
-        root_file = ctx.file.root_file.short_path,
+        cmd = ctx.file.cmd.path,
     )
     ctx.actions.write(
         output = ctx.outputs.executable,
@@ -38,7 +45,6 @@ cd $(dirname $(readlink {root_file}))
     runfiles = ctx.runfiles(
         files = [
             ctx.file.cmd,
-            ctx.file.root_file,
         ],
     )
     return [DefaultInfo(runfiles = runfiles)]
@@ -46,10 +52,6 @@ cd $(dirname $(readlink {root_file}))
 _workspace_binary_script = rule(
     attrs = {
         "cmd": attr.label(
-            mandatory = True,
-            allow_single_file = True,
-        ),
-        "root_file": attr.label(
             mandatory = True,
             allow_single_file = True,
         ),
@@ -72,13 +74,11 @@ def workspace_binary(
         name,
         cmd,
         args = None,
-        visibility = None,
-        root_file = "//:WORKSPACE"):
+        visibility = None):
     script_name = name + "_script"
     _workspace_binary_script(
         name = script_name,
         cmd = cmd,
-        root_file = root_file,
         tags = ["manual"],
     )
     native.sh_binary(

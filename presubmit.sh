@@ -18,22 +18,28 @@ set -o errexit
 set -o pipefail
 set -o xtrace
 
-LATEST_GO=$(gimme --known | sort -V | tail -1)
-eval "$(gimme ${LATEST_GO})"
-mkdir -p $GOPATH/src/k8s.io
 # TODO(fejta): remove this if block, just run else after moving off travis
 if [[ -n "${TRAVIS_BUILD_DIR:-}" ]]; then
+  LATEST_GO=$(gimme --known | sort -V | tail -1)
+  eval "$(gimme ${LATEST_GO})"
+  mkdir -p $GOPATH/src/k8s.io
   mv $TRAVIS_BUILD_DIR $GOPATH/src/k8s.io
   cd $GOPATH/src/k8s.io/repo-infra
+  echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
+  curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
+  sudo apt-get update
+  sudo apt-get install bazel
 else
   echo "We do not appear to be in travis CI..." >&2
   cd "$(git rev-parse --show-toplevel)"
+  export GOPATH=${GOPATH:-$HOME/go}
+  mkdir -p "$GOPATH"
+  bazel build //:go
+  bazel build //:gofmt
+  export PATH=$PATH:$GOPATH/bin:$PWD/bazel-bin
+  export GOPATH=$GOPATH:/go  # prow hack
 fi
 
-echo "deb [arch=amd64] https://storage.googleapis.com/bazel-apt stable jdk1.8" | sudo tee /etc/apt/sources.list.d/bazel.list
-curl https://bazel.build/bazel-release.pub.gpg | sudo apt-key add -
-sudo apt-get update
-sudo apt-get install bazel
 export GO111MODULE=off
 go get -u github.com/alecthomas/gometalinter
 go get -u github.com/bazelbuild/buildtools/buildifier

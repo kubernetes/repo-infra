@@ -36,13 +36,13 @@ else
   mkdir -p "$GOPATH"
   bazel build //:go
   bazel build //:gofmt
+  bazel build //:golangci-lint
+  bazel build //:buildifier
   export PATH=$PATH:$GOPATH/bin:$PWD/bazel-bin
   export GOPATH=$GOPATH:/go  # prow hack
 fi
 
-GO111MODULE=on go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.18.0
 export GO111MODULE=off
-go get -u github.com/bazelbuild/buildtools/buildifier
 # Build first since we need the generated protobuf for the govet checks
 bazel build --config=ci //...
 ./verify/verify-boilerplate.sh --rootdir="$(pwd)" -v

@@ -1,0 +1,20 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "diff.go",
+        "diff.pb.go",
+        "doc.go",
+        "parse.go",
+        "print.go",
+        "reader_util.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/sourcegraph/go-diff/diff",
+    importpath = "github.com/sourcegraph/go-diff/diff",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/gogo/protobuf/proto:go_default_library",
+        "//vendor/sourcegraph.com/sqs/pbtypes:go_default_library",
+    ],
+)

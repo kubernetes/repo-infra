@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["astcache.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/lint/astcache",
+    importpath = "github.com/golangci/golangci-lint/pkg/lint/astcache",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/golangci-lint/pkg/fsutils:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/logutils:go_default_library",
+        "//vendor/golang.org/x/tools/go/packages:go_default_library",
+    ],
+)

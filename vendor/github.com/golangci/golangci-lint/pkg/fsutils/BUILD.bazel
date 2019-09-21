@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "filecache.go",
+        "fsutils.go",
+        "linecache.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/fsutils",
+    importpath = "github.com/golangci/golangci-lint/pkg/fsutils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/golangci-lint/pkg/logutils:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+    ],
+)

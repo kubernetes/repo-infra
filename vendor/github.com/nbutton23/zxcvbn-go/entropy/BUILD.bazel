@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["entropyCalculator.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/nbutton23/zxcvbn-go/entropy",
+    importpath = "github.com/nbutton23/zxcvbn-go/entropy",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/nbutton23/zxcvbn-go/adjacency:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/match:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/utils/math:go_default_library",
+    ],
+)

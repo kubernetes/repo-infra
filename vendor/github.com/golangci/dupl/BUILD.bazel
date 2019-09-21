@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["main.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/dupl",
+    importpath = "github.com/golangci/dupl",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/dupl/job:go_default_library",
+        "//vendor/github.com/golangci/dupl/printer:go_default_library",
+        "//vendor/github.com/golangci/dupl/syntax:go_default_library",
+    ],
+)

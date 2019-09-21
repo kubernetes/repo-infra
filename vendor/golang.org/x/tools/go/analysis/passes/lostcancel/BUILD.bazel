@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["lostcancel.go"],
+    importmap = "k8s.io/repo-infra/vendor/golang.org/x/tools/go/analysis/passes/lostcancel",
+    importpath = "golang.org/x/tools/go/analysis/passes/lostcancel",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/golang.org/x/tools/go/analysis:go_default_library",
+        "//vendor/golang.org/x/tools/go/analysis/passes/ctrlflow:go_default_library",
+        "//vendor/golang.org/x/tools/go/analysis/passes/inspect:go_default_library",
+        "//vendor/golang.org/x/tools/go/ast/inspector:go_default_library",
+        "//vendor/golang.org/x/tools/go/cfg:go_default_library",
+    ],
+)

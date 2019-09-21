@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "diff.go",
+        "isatty_other.go",
+        "isatty_windows.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/bazelbuild/buildtools/differ",
+    importpath = "github.com/bazelbuild/buildtools/differ",
+    visibility = ["//visibility:public"],
+)

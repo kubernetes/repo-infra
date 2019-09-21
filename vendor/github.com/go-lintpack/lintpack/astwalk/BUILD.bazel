@@ -1,0 +1,29 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "comment_walker.go",
+        "doc_comment_walker.go",
+        "expr_walker.go",
+        "func_decl_walker.go",
+        "local_comment_walker.go",
+        "local_def_visitor.go",
+        "local_def_walker.go",
+        "local_expr_walker.go",
+        "stmt_list_walker.go",
+        "stmt_walker.go",
+        "type_expr_walker.go",
+        "visitor.go",
+        "walk_handler.go",
+        "walker.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/go-lintpack/lintpack/astwalk",
+    importpath = "github.com/go-lintpack/lintpack/astwalk",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/go-lintpack/lintpack:go_default_library",
+        "//vendor/github.com/go-toolsmith/astp:go_default_library",
+        "//vendor/github.com/go-toolsmith/typep:go_default_library",
+    ],
+)

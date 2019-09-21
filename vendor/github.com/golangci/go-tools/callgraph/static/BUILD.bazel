@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["static.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/go-tools/callgraph/static",
+    importpath = "github.com/golangci/go-tools/callgraph/static",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/go-tools/callgraph:go_default_library",
+        "//vendor/github.com/golangci/go-tools/ssa:go_default_library",
+        "//vendor/github.com/golangci/go-tools/ssa/ssautil:go_default_library",
+    ],
+)

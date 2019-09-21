@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "checkstyle.go",
+        "codeclimate.go",
+        "json.go",
+        "junitxml.go",
+        "printer.go",
+        "tab.go",
+        "text.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/printers",
+    importpath = "github.com/golangci/golangci-lint/pkg/printers",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/fatih/color:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/logutils:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/report:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/result:go_default_library",
+    ],
+)

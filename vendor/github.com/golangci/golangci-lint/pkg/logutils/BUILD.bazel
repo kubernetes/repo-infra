@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "log.go",
+        "log_mock.go",
+        "logutils.go",
+        "out.go",
+        "stderr_log.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/logutils",
+    importpath = "github.com/golangci/golangci-lint/pkg/logutils",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/fatih/color:go_default_library",
+        "//vendor/github.com/golang/mock/gomock:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/exitcodes:go_default_library",
+        "//vendor/github.com/mattn/go-colorable:go_default_library",
+        "//vendor/github.com/sirupsen/logrus:go_default_library",
+    ],
+)

@@ -1,0 +1,35 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "archive.go",
+        "big.go",
+        "bind.go",
+        "blacklist.go",
+        "errors.go",
+        "fileperms.go",
+        "hardcoded_credentials.go",
+        "rand.go",
+        "readfile.go",
+        "rsa.go",
+        "rulelist.go",
+        "sql.go",
+        "ssh.go",
+        "ssrf.go",
+        "subproc.go",
+        "tempfiles.go",
+        "templates.go",
+        "tls.go",
+        "tls_config.go",
+        "unsafe.go",
+        "weakcrypto.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/gosec/rules",
+    importpath = "github.com/golangci/gosec/rules",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/gosec:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go:go_default_library",
+    ],
+)

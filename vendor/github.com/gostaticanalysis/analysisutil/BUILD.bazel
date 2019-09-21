@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "file.go",
+        "pkg.go",
+        "ssa.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/gostaticanalysis/analysisutil",
+    importpath = "github.com/gostaticanalysis/analysisutil",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/golang.org/x/tools/go/analysis:go_default_library",
+        "//vendor/golang.org/x/tools/go/ssa:go_default_library",
+    ],
+)

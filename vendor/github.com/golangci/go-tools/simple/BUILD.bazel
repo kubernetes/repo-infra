@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["lint.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/go-tools/simple",
+    importpath = "github.com/golangci/go-tools/simple",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/go-tools/arg:go_default_library",
+        "//vendor/github.com/golangci/go-tools/internal/sharedcheck:go_default_library",
+        "//vendor/github.com/golangci/go-tools/lint:go_default_library",
+        "//vendor/github.com/golangci/go-tools/lint/lintdsl:go_default_library",
+        "//vendor/golang.org/x/tools/go/types/typeutil:go_default_library",
+    ],
+)

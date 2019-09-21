@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "ascii.go",
+        "case.go",
+        "legal.go",
+        "mime.go",
+        "notwords.go",
+        "replace.go",
+        "stringreplacer.go",
+        "url.go",
+        "words.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/misspell",
+    importpath = "github.com/golangci/misspell",
+    visibility = ["//visibility:public"],
+)

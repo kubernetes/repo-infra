@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "config.go",
+        "config_gocritic.go",
+        "reader.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/config",
+    importpath = "github.com/golangci/golangci-lint/pkg/config",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/go-critic/go-critic/checkers:go_default_library",
+        "//vendor/github.com/go-lintpack/lintpack:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/fsutils:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/logutils:go_default_library",
+        "//vendor/github.com/mitchellh/go-homedir:go_default_library",
+        "//vendor/github.com/pkg/errors:go_default_library",
+        "//vendor/github.com/spf13/viper:go_default_library",
+    ],
+)

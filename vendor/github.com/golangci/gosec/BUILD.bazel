@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "analyzer.go",
+        "call_list.go",
+        "config.go",
+        "helpers.go",
+        "import_tracker.go",
+        "issue.go",
+        "resolve.go",
+        "rule.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/gosec",
+    importpath = "github.com/golangci/gosec",
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/golang.org/x/tools/go/loader:go_default_library"],
+)

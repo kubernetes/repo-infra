@@ -1,0 +1,12 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "dupl.go",
+        "suffixtree.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/dupl/suffixtree",
+    importpath = "github.com/golangci/dupl/suffixtree",
+    visibility = ["//visibility:public"],
+)

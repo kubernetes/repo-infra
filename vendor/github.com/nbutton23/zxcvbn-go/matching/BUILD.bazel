@@ -1,0 +1,23 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "dateMatchers.go",
+        "dictionaryMatch.go",
+        "leet.go",
+        "matching.go",
+        "repeatMatch.go",
+        "sequenceMatch.go",
+        "spatialMatch.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/nbutton23/zxcvbn-go/matching",
+    importpath = "github.com/nbutton23/zxcvbn-go/matching",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/nbutton23/zxcvbn-go/adjacency:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/entropy:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/frequency:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/match:go_default_library",
+    ],
+)

@@ -1,0 +1,19 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "main.go",
+        "mod_version.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/cmd/golangci-lint",
+    importpath = "github.com/golangci/golangci-lint/cmd/golangci-lint",
+    visibility = ["//visibility:private"],
+    deps = ["//vendor/github.com/golangci/golangci-lint/pkg/commands:go_default_library"],
+)
+
+go_binary(
+    name = "golangci-lint",
+    embed = [":go_default_library"],
+    visibility = ["//visibility:public"],
+)

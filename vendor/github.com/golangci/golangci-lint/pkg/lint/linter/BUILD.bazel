@@ -1,0 +1,24 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "config.go",
+        "context.go",
+        "linter.go",
+        "metalinter.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/lint/linter",
+    importpath = "github.com/golangci/golangci-lint/pkg/lint/linter",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/golangci-lint/pkg/config:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/fsutils:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/lint/astcache:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/logutils:go_default_library",
+        "//vendor/github.com/golangci/golangci-lint/pkg/result:go_default_library",
+        "//vendor/golang.org/x/tools/go/loader:go_default_library",
+        "//vendor/golang.org/x/tools/go/packages:go_default_library",
+        "//vendor/golang.org/x/tools/go/ssa:go_default_library",
+    ],
+)

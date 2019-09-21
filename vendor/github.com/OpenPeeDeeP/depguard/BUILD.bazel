@@ -1,0 +1,16 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "depguard.go",
+        "rootchecker.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/OpenPeeDeeP/depguard",
+    importpath = "github.com/OpenPeeDeeP/depguard",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/gobwas/glob:go_default_library",
+        "//vendor/golang.org/x/tools/go/loader:go_default_library",
+    ],
+)

@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["stdlib.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/go-tools/deprecated",
+    importpath = "github.com/golangci/go-tools/deprecated",
+    visibility = ["//visibility:public"],
+)

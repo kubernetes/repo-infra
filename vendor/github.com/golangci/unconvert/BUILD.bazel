@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["unconvert.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/unconvert",
+    importpath = "github.com/golangci/unconvert",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/kisielk/gotool:go_default_library",
+        "//vendor/golang.org/x/text/width:go_default_library",
+        "//vendor/golang.org/x/tools/go/loader:go_default_library",
+    ],
+)

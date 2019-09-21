@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "checkers_db.go",
+        "context.go",
+        "doc.go",
+        "lintpack.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/go-lintpack/lintpack",
+    importpath = "github.com/go-lintpack/lintpack",
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/go-toolsmith/astfmt:go_default_library"],
+)

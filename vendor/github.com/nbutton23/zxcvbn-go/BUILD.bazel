@@ -1,0 +1,15 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["zxcvbn.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/nbutton23/zxcvbn-go",
+    importpath = "github.com/nbutton23/zxcvbn-go",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/nbutton23/zxcvbn-go/match:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/matching:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/scoring:go_default_library",
+        "//vendor/github.com/nbutton23/zxcvbn-go/utils/math:go_default_library",
+    ],
+)

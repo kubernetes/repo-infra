@@ -1,0 +1,10 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["ssautil.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/go-tools/ssautil",
+    importpath = "github.com/golangci/go-tools/ssautil",
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/golangci/go-tools/ssa:go_default_library"],
+)

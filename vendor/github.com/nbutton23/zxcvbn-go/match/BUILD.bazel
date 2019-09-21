@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["match.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/nbutton23/zxcvbn-go/match",
+    importpath = "github.com/nbutton23/zxcvbn-go/match",
+    visibility = ["//visibility:public"],
+)

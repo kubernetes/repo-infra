@@ -1,0 +1,17 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "go13.go",
+        "go14-15.go",
+        "go16-18.go",
+        "match.go",
+        "match18.go",
+        "tool.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/kisielk/gotool",
+    importpath = "github.com/kisielk/gotool",
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/kisielk/gotool/internal/load:go_default_library"],
+)

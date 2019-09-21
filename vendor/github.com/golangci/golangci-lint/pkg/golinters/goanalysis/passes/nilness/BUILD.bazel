@@ -1,0 +1,14 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["nilness.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/golinters/goanalysis/passes/nilness",
+    importpath = "github.com/golangci/golangci-lint/pkg/golinters/goanalysis/passes/nilness",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/golang.org/x/tools/go/analysis:go_default_library",
+        "//vendor/golang.org/x/tools/go/analysis/passes/buildssa:go_default_library",
+        "//vendor/golang.org/x/tools/go/ssa:go_default_library",
+    ],
+)

@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["golangci.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/errcheck/golangci",
+    importpath = "github.com/golangci/errcheck/golangci",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/errcheck/internal/errcheck:go_default_library",
+        "//vendor/golang.org/x/tools/go/loader:go_default_library",
+    ],
+)

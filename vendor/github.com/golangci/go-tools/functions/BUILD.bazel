@@ -1,0 +1,22 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "concrete.go",
+        "functions.go",
+        "loops.go",
+        "pure.go",
+        "terminates.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/go-tools/functions",
+    importpath = "github.com/golangci/go-tools/functions",
+    visibility = ["//visibility:public"],
+    deps = [
+        "//vendor/github.com/golangci/go-tools/callgraph:go_default_library",
+        "//vendor/github.com/golangci/go-tools/callgraph/static:go_default_library",
+        "//vendor/github.com/golangci/go-tools/lint/lintdsl:go_default_library",
+        "//vendor/github.com/golangci/go-tools/ssa:go_default_library",
+        "//vendor/github.com/golangci/go-tools/staticcheck/vrp:go_default_library",
+    ],
+)

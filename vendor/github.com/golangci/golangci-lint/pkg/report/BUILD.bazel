@@ -1,0 +1,13 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "data.go",
+        "log.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/golangci-lint/pkg/report",
+    importpath = "github.com/golangci/golangci-lint/pkg/report",
+    visibility = ["//visibility:public"],
+    deps = ["//vendor/github.com/golangci/golangci-lint/pkg/logutils:go_default_library"],
+)

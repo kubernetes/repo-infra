@@ -1,0 +1,21 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = [
+        "astfind.go",
+        "astflow.go",
+        "astset.go",
+        "lintutil.go",
+        "zero_value.go",
+    ],
+    importmap = "k8s.io/repo-infra/vendor/github.com/go-critic/go-critic/checkers/internal/lintutil",
+    importpath = "github.com/go-critic/go-critic/checkers/internal/lintutil",
+    visibility = ["//vendor/github.com/go-critic/go-critic/checkers:__subpackages__"],
+    deps = [
+        "//vendor/github.com/go-toolsmith/astequal:go_default_library",
+        "//vendor/github.com/go-toolsmith/astp:go_default_library",
+        "//vendor/github.com/go-toolsmith/typep:go_default_library",
+        "//vendor/golang.org/x/tools/go/ast/astutil:go_default_library",
+    ],
+)

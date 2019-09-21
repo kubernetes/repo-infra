@@ -1,0 +1,9 @@
+load("@io_bazel_rules_go//go:def.bzl", "go_library")
+
+go_library(
+    name = "go_default_library",
+    srcs = ["gocyclo.go"],
+    importmap = "k8s.io/repo-infra/vendor/github.com/golangci/gocyclo/pkg/gocyclo",
+    importpath = "github.com/golangci/gocyclo/pkg/gocyclo",
+    visibility = ["//visibility:public"],
+)

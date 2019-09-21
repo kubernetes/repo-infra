@@ -1,6 +1,30 @@
+# gazelle:repository_macro repos.bzl%go_repositories
 workspace(name = "io_k8s_repo_infra")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "bazel_skylib",
+    sha256 = "2ef429f5d7ce7111263289644d233707dba35e39696377ebab8b0bc701f7818e",
+    urls = [
+        "https://github.com/bazelbuild/bazel-skylib/releases/download/0.8.0/bazel-skylib.0.8.0.tar.gz",
+    ],
+)
+
+load("@bazel_skylib//lib:versions.bzl", "versions")
+
+versions.check(minimum_bazel_version = "0.29.1")
+
+http_archive(
+    name = "com_google_protobuf",
+    sha256 = "2ee9dcec820352671eb83e081295ba43f7a4157181dad549024d7070d079cf65",
+    strip_prefix = "protobuf-3.9.0",
+    urls = ["https://github.com/protocolbuffers/protobuf/archive/v3.9.0.tar.gz"],
+)
+
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
 
 http_archive(
     name = "io_bazel_rules_go",
@@ -20,7 +44,7 @@ http_archive(
     ],
 )
 
-load("@io_bazel_rules_go//go:deps.bzl", "go_rules_dependencies", "go_register_toolchains")
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 go_rules_dependencies()
 
@@ -30,8 +54,6 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies")
 
 gazelle_dependencies()
 
-http_archive(
-    name = "io_bazel",
-    sha256 = "6860a226c8123770b122189636fb0c156c6e5c9027b5b245ac3b2315b7b55641",
-    url = "https://github.com/bazelbuild/bazel/releases/download/0.22.0/bazel-0.22.0-dist.zip",
-)
+load("//:repos.bzl", "go_repositories")
+
+go_repositories()

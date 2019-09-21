@@ -2,4 +2,4 @@ dist: trusty
 sudo: required
 
 script:
-  - ./presubmit.sh
+  - echo NOOP

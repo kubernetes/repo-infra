@@ -111,7 +111,10 @@ go_genrule = go_rule(
         ),
         "outs": attr.output_list(mandatory = True),
         "cmd": attr.string(mandatory = True),
-        "go_deps": attr.label_list(providers = [GoLibrary, GoArchive]),
+        "go_deps": attr.label_list(providers = [
+            GoLibrary,
+            GoArchive,
+        ]),
         "importpath": attr.string(),
         "message": attr.string(),
         "executable": attr.bool(default = False),

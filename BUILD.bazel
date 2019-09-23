@@ -24,3 +24,17 @@ workspace_binary(
     name = "kazel",
     cmd = "//cmd/kazel",
 )
+
+workspace_binary(
+    name = "golangci-lint",
+    cmd = "@com_github_golangci_golangci_lint//cmd/golangci-lint",
+)
+
+workspace_binary(
+    name = "buildifier",
+    cmd = "@com_github_bazelbuild_buildtools//buildifier",
+)
+
+load("@bazel_gazelle//:def.bzl", "gazelle")
+
+gazelle(name = "gazelle")

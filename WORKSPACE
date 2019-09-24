@@ -16,6 +16,20 @@ load("@bazel_skylib//lib:versions.bzl", "versions")
 versions.check(minimum_bazel_version = "0.29.1")
 
 http_archive(
+    name = "bazel_toolchains",
+    sha256 = "a019fbd579ce5aed0239de865b2d8281dbb809efd537bf42e0d366783e8dec65",
+    strip_prefix = "bazel-toolchains-0.29.2",
+    urls = [
+        "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/0.29.2.tar.gz",
+        "https://github.com/bazelbuild/bazel-toolchains/archive/0.29.2.tar.gz",
+    ],
+)
+
+load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+
+rbe_autoconfig(name = "rbe_default")
+
+http_archive(
     name = "com_google_protobuf",
     sha256 = "2ee9dcec820352671eb83e081295ba43f7a4157181dad549024d7070d079cf65",
     strip_prefix = "protobuf-3.9.0",

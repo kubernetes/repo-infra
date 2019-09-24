@@ -15,13 +15,16 @@ build:remote --crosstool_top=@rbe_default//cc:toolchain
 build:remote --action_env=BAZEL_DO_NOT_DETECT_CPP_TOOLCHAIN=1
 
 build:remote --extra_toolchains=@rbe_default//config:cc-toolchain
-build:remote --extra_execution_platforms=:rbe_with_network
-build:remote --host_platform=:rbe_with_network
-build:remote --platforms=:rbe_with_network
+build:remote --extra_execution_platforms=@rbe_default//config:platform
+build:remote --host_platform=@rbe_default//config:platform
+build:remote --platforms=@rbe_default//config:platform
 
 build:remote --define=EXECUTOR=remote
 build:remote --remote_executor=grpcs://remotebuildexecution.googleapis.com
 build:remote --remote_timeout=3600
+
+# Alt: --google_credentials=some_file.json
+build:remote --google_default_credentials=true
 
 # Minimize what is downloaded
 build:inmemory --experimental_inmemory_jdeps_files
@@ -34,8 +37,6 @@ build:toplevel --experimental_remote_download_outputs=toplevel
 build:minimal --config=inmemory
 build:minimal --experimental_remote_download_outputs=minimal
 
-# --google_credentials=some_file.json
-build:remote --google_default_credentials=true
 build:remote --config=toplevel
 
 run:remote --experimental_remote_download_outputs=all --noexperimental_inmemory_jdeps_files --noexperimental_inmemory_dotd_files
@@ -47,6 +48,5 @@ run:remote --experimental_remote_download_outputs=all --noexperimental_inmemory_
 build:ci-instance --remote_instance_name=projects/k8s-prow-builds/instances/default_instance
 
 # Config we want to use in ci
-# TODO(fejta): turn on service account so this will work
-#build:ci --config=remote --config=ci-instance
+build:ci --config=remote --config=ci-instance
 build:ci --noshow_progress

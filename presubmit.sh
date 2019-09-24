@@ -16,22 +16,36 @@
 set -o nounset
 set -o errexit
 set -o pipefail
-set -o xtrace
 
 cd "$(git rev-parse --show-toplevel)"
 export GOPATH=${GOPATH:-$HOME/go}
 mkdir -p "$GOPATH"
-bazel build //:go
-bazel build //:gofmt
-bazel build //:golangci-lint
-bazel build //:buildifier
+if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
+  echo "Service account detected. Adding --config=ci to bazel commands" >&2
+  mkdir -p "$HOME"
+  touch "$HOME/.bazelrc"
+  echo "build --config=ci" >> "$HOME/.bazelrc"
+fi
+tools=(
+  //:go
+  //:gofmt
+  //:golangci-lint
+  //:buildifier
+)
+(
+  # Download all tool outputs until we migrate to using bazel run
+  set -o xtrace
+  bazel build --experimental_remote_download_outputs=all "${tools[@]}"
+)
 export PATH=$PATH:$GOPATH/bin:$PWD/bazel-bin
 export GOPATH=$GOPATH:/go  # TODO(fejta): fix this prow hack
-export GO111MODULE=off
+export GO111MODULE=off # TODO(fejta): get rid of this
 # Build first since we need the generated protobuf for the govet checks
-bazel build --config=ci //...
-./verify/verify-boilerplate.sh --rootdir="$(pwd)" -v
-GOPATH="${GOPATH}:$(pwd)/bazel-bin/verify/verify-go-src-go_path" ./verify/verify-go-src.sh --rootdir "$(pwd)" -v
-./verify/verify-bazel.sh
-buildifier -mode=check $(find . -name BUILD -o -name '*.bzl' -type f -not -wholename '*/vendor/*')
-bazel test --config=ci //...
+(
+  set -o xtrace
+  bazel test //... # This also builds everything
+  ./verify/verify-boilerplate.sh --rootdir="$(pwd)" -v
+  GOPATH="${GOPATH}:$(pwd)/bazel-bin/verify/verify-go-src-go_path" ./verify/verify-go-src.sh --rootdir "$(pwd)" -v
+  ./verify/verify-bazel.sh
+  buildifier -mode=check $(find . -name BUILD -o -name '*.bzl' -type f -not -wholename '*/vendor/*')
+)

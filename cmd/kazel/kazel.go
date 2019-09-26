@@ -351,6 +351,19 @@ func writeFile(path string, f *build.File, boilerplate []byte, exists, dryRun bo
 	build.Rewrite(f, &info)
 	var out []byte
 	out = append(out, boilerplate...)
+	// double format the source file as our modification logic sometimes uses
+	// LiteralExpr where it should use other types of expressions, and this
+	// prevents issues where kazel thus formats structures incorrectly.
+	// :this_is_fine:
+	outData := build.Format(f)
+	var err error
+	f, err = build.Parse(path, outData)
+	if err != nil {
+		return false, fmt.Errorf("internal error occurred formatting file: %v", err)
+	}
+	// also call Rewrite again to run Buildifier against the results as
+	// visibility rules are not ordered correctly for some reason
+	build.Rewrite(f, &info)
 	out = append(out, build.Format(f)...)
 	if exists {
 		orig, err := ioutil.ReadFile(path)

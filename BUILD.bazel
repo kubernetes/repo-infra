@@ -38,3 +38,29 @@ workspace_binary(
 load("@bazel_gazelle//:def.bzl", "gazelle")
 
 gazelle(name = "gazelle")
+
+filegroup(
+    name = "package-srcs",
+    srcs = glob(
+        ["**"],
+        exclude = [
+            "bazel-*/**",
+            ".git/**",
+        ],
+    ),
+    tags = ["automanaged"],
+    visibility = ["//visibility:private"],
+)
+
+filegroup(
+    name = "all-srcs",
+    srcs = [
+        ":package-srcs",
+        "//cmd/kazel:all-srcs",
+        "//defs:all-srcs",
+        "//tools/build_tar:all-srcs",
+        "//verify:all-srcs",
+    ],
+    tags = ["automanaged"],
+    visibility = ["//visibility:public"],
+)

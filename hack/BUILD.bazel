@@ -5,27 +5,62 @@ test_suite(
     tags = ["lint"],  # picks up all non-manual targets with this tag
 )
 
-GAZELLE = "@bazel_gazelle//cmd/gazelle"
+_GAZELLE = "@bazel_gazelle//cmd/gazelle"
 
-KAZEL = "@io_k8s_repo_infra//cmd/kazel"
+_GO = "@go_sdk//:bin/go"
 
-GO = "@go_sdk//:bin/go"
+_KAZEL = "@io_k8s_repo_infra//cmd/kazel"
+
+sh_binary(
+    name = "update-bazel",
+    srcs = ["update-bazel.sh"],
+    args = [
+        "$(location %s)" % _GAZELLE,
+        "$(location %s)" % _KAZEL,
+    ],
+    data = [
+        _GAZELLE,
+        _KAZEL,
+    ],
+)
 
 sh_binary(
     name = "update-deps",
     srcs = ["update-deps.sh"],
     args = [
-        "$(location %s)" % GO,
-        "$(location %s)" % GAZELLE,
-        "$(location %s)" % KAZEL,
+        "$(location %s)" % _GO,
+        "$(location %s)" % _GAZELLE,
+        "$(location %s)" % _KAZEL,
         "$(location :update-bazel)",
     ],
     data = [
-        GAZELLE,
-        GO,
-        KAZEL,
+        _GAZELLE,
+        _GO,
+        _KAZEL,
         ":update-bazel",
     ],
+)
+
+sh_binary(
+    name = "update-gofmt",
+    srcs = ["update-gofmt.sh"],
+    args = ["$(location @go_sdk//:bin/gofmt)"],
+    data = ["@go_sdk//:bin/gofmt"],
+)
+
+sh_test(
+    name = "verify-bazel",
+    srcs = ["verify-bazel.sh"],
+    args = [
+        "$(location %s)" % _GAZELLE,
+        "$(location %s)" % _KAZEL,
+    ],
+    data = [
+        "@//:all-srcs",
+        _GAZELLE,
+        _KAZEL,
+    ],
+    tags = ["lint"],
 )
 
 sh_test(
@@ -33,15 +68,15 @@ sh_test(
     srcs = ["verify-deps.sh"],
     args = [
         "$(location :update-deps)",
-        "$(location %s)" % GO,
-        "$(location %s)" % GAZELLE,
-        "$(location %s)" % KAZEL,
+        "$(location %s)" % _GO,
+        "$(location %s)" % _GAZELLE,
+        "$(location %s)" % _KAZEL,
         "$(location :update-bazel)",
     ],
     data = [
-        GAZELLE,
-        GO,
-        KAZEL,
+        _GAZELLE,
+        _GO,
+        _KAZEL,
         ":update-bazel",
         ":update-deps",
         "@//:all-srcs",
@@ -49,30 +84,13 @@ sh_test(
     tags = ["lint"],
 )
 
-sh_binary(
-    name = "update-bazel",
-    srcs = ["update-bazel.sh"],
-    args = [
-        "$(location %s)" % GAZELLE,
-        "$(location %s)" % KAZEL,
-    ],
-    data = [
-        GAZELLE,
-        KAZEL,
-    ],
-)
-
 sh_test(
-    name = "verify-bazel",
-    srcs = ["verify-bazel.sh"],
-    args = [
-        "$(location %s)" % GAZELLE,
-        "$(location %s)" % KAZEL,
-    ],
+    name = "verify-gofmt",
+    srcs = ["verify-gofmt.sh"],
+    args = ["$(location @go_sdk//:bin/gofmt)"],
     data = [
         "@//:all-srcs",
-        GAZELLE,
-        KAZEL,
+        "@go_sdk//:bin/gofmt",
     ],
     tags = ["lint"],
 )

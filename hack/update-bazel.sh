@@ -17,15 +17,29 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-cd $(git rev-parse --show-toplevel)
+if [[ -n "${BUILD_WORKSPACE_DIRECTORY:-}" ]]; then # Running inside bazel
+  echo "Updating bazel rules..." >&2
+elif ! command -v bazel &>/dev/null; then
+  echo "Install bazel at https://bazel.build" >&2
+  exit 1
+else
+  (
+    set -o xtrace
+    bazel run @io_k8s_repo_infra//hack:update-bazel
+  )
+  exit 0
+fi
 
-rm -rf vendor
-export GO111MODULE=on
-export GOPROXY=https://proxy.golang.org
-export GOSUMDB=sum.golang.org
-bazel run //:go -- mod tidy
-bazel run //:gazelle -- fix -mode=fix
-bazel run //:gazelle -- update-repos \
-  --from_file=go.mod --to_macro=repos.bzl%go_repositories \
-  --build_file_generation=on --build_file_proto_mode=disable
-bazel run //:kazel -- --cfg-path=./.kazelcfg.json
+gazelle=$(realpath "$1")
+kazel=$(realpath "$2")
+
+cd "$BUILD_WORKSPACE_DIRECTORY"
+
+if [[ ! -f go.mod ]]; then
+    echo "No module defined, see https://github.com/golang/go/wiki/Modules#how-to-define-a-module" >&2
+    exit 1
+fi
+
+set -o xtrace
+"$gazelle" fix --external=external
+"$kazel" --cfg-path=./.kazelcfg.json

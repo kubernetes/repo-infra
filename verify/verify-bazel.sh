@@ -13,18 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(fejta): delete this file
+
 set -o errexit
 set -o nounset
 set -o pipefail
+set -o xtrace
 
-cd $(git rev-parse --show-toplevel)
-gazelle_diff=$(bazel run //:gazelle -- fix -mode=diff || echo FAILED gazelle)
-kazel_diff=$(bazel run //:kazel -- -dry-run -print-diff --cfg-path=./.kazelcfg.json || echo FAILED kazel)
 
-if [[ -n "${gazelle_diff}" || -n "${kazel_diff}" ]]; then
-  echo "${gazelle_diff}"
-  echo "${kazel_diff}"
-  echo
-  echo "Run ./verify/update-bazel.sh"
-  exit 1
-fi
+bazel test @io_k8s_repo_infra//hack:verify-deps

@@ -39,6 +39,8 @@ load("@bazel_gazelle//:def.bzl", "gazelle")
 
 gazelle(name = "gazelle")
 
+exports_files([".kazelcfg.json"])
+
 filegroup(
     name = "package-srcs",
     srcs = glob(
@@ -58,9 +60,22 @@ filegroup(
         ":package-srcs",
         "//cmd/kazel:all-srcs",
         "//defs:all-srcs",
+        "//hack:all-srcs",
         "//tools/build_tar:all-srcs",
         "//verify:all-srcs",
     ],
     tags = ["automanaged"],
     visibility = ["//visibility:public"],
+)
+
+platform(
+    name = "rbe_with_network",
+    parents = ["@rbe_default//config:platform"],
+    remote_execution_properties = """
+      properties: {
+        name: "dockerNetwork"
+        value: "standard"
+      }
+      {PARENT_REMOTE_EXECUTION_PROPERTIES}
+    """,
 )

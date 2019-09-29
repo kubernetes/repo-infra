@@ -11,6 +11,8 @@ _GO = "@go_sdk//:bin/go"
 
 _KAZEL = "@io_k8s_repo_infra//cmd/kazel"
 
+_GOLANGCI_LINT = "@com_github_golangci_golangci_lint//cmd/golangci-lint"
+
 sh_binary(
     name = "update-bazel",
     srcs = ["update-bazel.sh"],
@@ -91,6 +93,21 @@ sh_test(
     data = [
         "@//:all-srcs",
         "@go_sdk//:bin/gofmt",
+    ],
+    tags = ["lint"],
+)
+
+sh_test(
+    name = "verify-golangci-lint",
+    srcs = ["verify-golangci-lint.sh"],
+    args = [
+        "$(location %s)" % _GO,
+        "$(location %s)" % _GOLANGCI_LINT,
+    ],
+    data = [
+        "@//:all-srcs",
+        _GO,
+        _GOLANGCI_LINT,
     ],
     tags = ["lint"],
 )

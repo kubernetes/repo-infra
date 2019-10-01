@@ -39,16 +39,26 @@ else
   exit 0
 fi
 
-gazelle=$1
-kazel=$2
+buildifier=$1
+gazelle=$2
+kazel=$3
 
 gazelle_diff=$("$gazelle" fix --mode=diff --external=external)
 kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./.kazelcfg.json)
+# TODO(fejta): --mode=diff --lint=warn
+buildifier_diff=$(find . \
+  -name BUILD -o -name BUILD.bazel -o -name '*.bzl' -type f \
+  \( -not -path '*/vendor/*' -prune \) \
+  -exec "$buildifier" --mode=diff '{}' + 2>&1 || echo "ERROR: found buildifier diffs")
 
-if [[ -n "${gazelle_diff}${kazel_diff}" ]]; then
+if [[ -n "${gazelle_diff}${kazel_diff}${buildifier_diff}" ]]; then
   echo "Current rules (-) do not match expected (+):" >&2
+  echo "gazelle diff:"
   echo "${gazelle_diff}"
+  echo "kazel diff:"
   echo "${kazel_diff}"
+  echo "buildifier diff:"
+  echo "$buildifier_diff"
   echo
   fail "bazel rules out of date"
 fi

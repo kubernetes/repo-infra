@@ -30,8 +30,9 @@ else
   exit 0
 fi
 
-gazelle=$(realpath "$1")
-kazel=$(realpath "$2")
+buildifier=$(realpath "$1")
+gazelle=$(realpath "$2")
+kazel=$(realpath "$3")
 
 cd "$BUILD_WORKSPACE_DIRECTORY"
 
@@ -43,3 +44,6 @@ fi
 set -o xtrace
 "$gazelle" fix --external=external
 "$kazel" --cfg-path=./.kazelcfg.json
+find . -name BUILD -o -name BUILD.bazel -o -name '*.bzl' -type f \
+  \( -not -path '*/vendor/*' -prune \) \
+  -exec "$buildifier" --mode=fix --lint=fix '{}' +

@@ -38,15 +38,17 @@ fi
 
 go=$(realpath "$1")
 export PATH=$(dirname "$go"):$PATH
-gazelle=$(realpath "$2")
-kazel=$(realpath "$3")
+buildifier=$(realpath "$3")
+gazelle=$(realpath "$4")
+kazel=$(realpath "$5")
 update_bazel=(
-  $(realpath "$4")
+  $(realpath "$2")
+  "$buildifier"
   "$gazelle"
   "$kazel"
 )
 
-shift 4
+shift 5
 
 cd "$BUILD_WORKSPACE_DIRECTORY"
 trap 'echo "FAILED" >&2' ERR

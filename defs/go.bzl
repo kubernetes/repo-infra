@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Rules for generating gocode at compile time."""
+
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@io_bazel_rules_go//go:def.bzl", "GoArchive", "GoLibrary", "go_context", "go_path", "go_rule")
+load("@io_bazel_rules_go//go:def.bzl", "GoArchive", "GoLibrary", "go_context", "go_rule")
 
 def _compute_genrule_variables(srcs, outs):
     resolved_srcs = [src.path for src in srcs]
@@ -31,9 +33,7 @@ def _compute_genrule_variables(srcs, outs):
 def _go_genrule_impl(ctx):
     go = go_context(ctx)
 
-    transitive_libs = depset()
-    for dep in ctx.attr.go_deps:
-        transitive_libs = depset(transitive = [transitive_libs, dep[GoArchive].transitive])
+    transitive_libs = depset(transitive = [d[GoArchive].transitive for d in ctx.attr.go_deps])
 
     gopath = []
     for lib in transitive_libs.to_list():

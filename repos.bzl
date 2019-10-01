@@ -12,9 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Packages used by go.mod."""
+
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 def go_repositories():
+    """Packages used by go.mod, created by gazelle."""
     go_repository(
         name = "cc_mvdan_interfacer",
         build_file_generation = "on",

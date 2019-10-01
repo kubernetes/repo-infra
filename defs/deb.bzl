@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Defines rules for creating debian packages."""
+
 load("//defs:pkg.bzl", "pkg_tar")
 load("@bazel_tools//tools/build_defs/pkg:pkg.bzl", "pkg_deb")
 
@@ -29,6 +31,7 @@ GOARCH_TO_DEBARCH = {
 }
 
 def k8s_deb(name, goarch = "amd64", tags = None, **kwargs):
+    """k8s_deb calls pkg_deb for a particular architecture, setting contact info."""
     debarch = GOARCH_TO_DEBARCH[goarch]
     pkg_deb(
         name = name + "-" + goarch,
@@ -42,6 +45,7 @@ def k8s_deb(name, goarch = "amd64", tags = None, **kwargs):
     )
 
 def deb_data(name, goarch = "amd64", data = [], tags = None, visibility = None):
+    """deb_data creates pkg_tar files for each datum."""
     deps = []
     for i, info in enumerate(data):
         dname = "%s-deb-data-%s-%s" % (name, goarch, i)

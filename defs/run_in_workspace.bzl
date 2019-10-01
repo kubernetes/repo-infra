@@ -12,11 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This technique was inspired by the gazelle rule implementation in bazelbuild/rules_go:
-# https://github.com/bazelbuild/rules_go/blob/86ade29284ca11deeead86c061e9ba9bd0d157e0/go/private/tools/gazelle.bzl
+"""Defines rules for starting a process in the workspace root.
 
-# Writes out a script which saves the runfiles directory,
-# changes to the workspace root, and then runs a command.
+This technique was inspired by the gazelle rule implementation in bazelbuild/rules_go:
+https://github.com/bazelbuild/rules_go/blob/86ade29284ca11deeead86c061e9ba9bd0d157e0/go/private/tools/gazelle.bzl
+"""
+
 def _workspace_binary_script_impl(ctx):
     content = """#!/usr/bin/env bash
 set -o errexit
@@ -60,21 +61,21 @@ _workspace_binary_script = rule(
     implementation = _workspace_binary_script_impl,
 )
 
-# Wraps a binary to be run in the workspace root via bazel run.
-#
-# For example, one might do something like
-#
-# workspace_binary(
-#     name = "dep",
-#     cmd = "//vendor/github.com/golang/dep/cmd/dep",
-# )
-#
-# which would allow running dep with bazel run.
 def workspace_binary(
         name,
         cmd,
         args = None,
         visibility = None):
+    """Wraps a binary to be run in the workspace root via bazel run.
+
+    For example, one might do something like
+
+    workspace_binary(
+        name = "dep",
+        cmd = "//vendor/github.com/golang/dep/cmd/dep",
+    )
+    which would allow running dep with bazel run.
+    """
     script_name = name + "_script"
     _workspace_binary_script(
         name = script_name,

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Rules for creating redhat packages."""
+
 load("@bazel_tools//tools/build_defs/pkg:rpm.bzl", "pkg_rpm")
 
 GOARCH_TO_RPMARCH = {
@@ -24,6 +26,7 @@ GOARCH_TO_RPMARCH = {
 }
 
 def pkg_rpm_for_goarch(name, data, goarch, tags = None, **kwargs):
+    """Creates a pkg_rpm filtering to data relevant to the specified goarch."""
     rpmarch = GOARCH_TO_RPMARCH[goarch]
     pkg_rpm(
         name = name + "-" + goarch,

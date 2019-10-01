@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Rules for uploading, hashing and creating release groups."""
+
 def _gcs_upload_impl(ctx):
     output_lines = []
     for t in ctx.attr.data:
@@ -34,6 +36,7 @@ def _gcs_upload_impl(ctx):
         is_executable = True,
     )
 
+    # TODO(fejta): migrate to provider
     return struct(
         runfiles = ctx.runfiles(
             files = ctx.files.data + ctx.files.uploader + [ctx.info_file, ctx.version_file, ctx.outputs.targets],
@@ -70,8 +73,8 @@ gcs_upload = rule(
     implementation = _gcs_upload_impl,
 )
 
-# Computes the md5sum of the provided src file, saving it in a file named 'name'.
 def md5sum(name, src, **kwargs):
+    """Computes the md5sum of the provided src file, saving it in a file named 'name'."""
     native.genrule(
         name = name + "_genmd5sum",
         srcs = [src],
@@ -81,8 +84,8 @@ def md5sum(name, src, **kwargs):
         **kwargs
     )
 
-# Computes the sha1sum of the provided src file, saving it in a file named 'name'.
 def sha1sum(name, src, **kwargs):
+    """Computes the sha1sum of the provided src file, saving it in a file named 'name'."""
     native.genrule(
         name = name + "_gensha1sum",
         srcs = [src],
@@ -92,8 +95,8 @@ def sha1sum(name, src, **kwargs):
         **kwargs
     )
 
-# Computes the sha512sum of the provided src file, saving it in a file named 'name'.
 def sha512sum(name, src, **kwargs):
+    """Computes the sha512sum of the provided src file, saving it in a file named 'name'."""
     native.genrule(
         name = name + "_gensha512sum",
         srcs = [src],
@@ -103,10 +106,12 @@ def sha512sum(name, src, **kwargs):
         **kwargs
     )
 
-# Returns a list of hash target names for the provided srcs.
-# Also updates the srcs_basenames_needing_hashes dictionary,
-# mapping src name to basename for each target in srcs.
 def _hashes_for_srcs(srcs, srcs_basenames_needing_hashes):
+    """Returns a list of hash target names for the provided srcs.
+
+    Also updates the srcs_basenames_needing_hashes dictionary,
+    mapping src name to basename for each target in srcs.
+    """
     hashes = []
     for src in srcs:
         parts = src.split(":")
@@ -121,17 +126,20 @@ def _hashes_for_srcs(srcs, srcs_basenames_needing_hashes):
         hashes.append(basename + ".sha512")
     return hashes
 
-# Creates 3+N rules based on the provided targets:
-# * A filegroup with just the provided targets (named 'name')
-# * A filegroup containing all of the md5, sha1 and sha512 hash files ('name-hashes')
-# * A filegroup containing both of the above ('name-and-hashes')
-# * All of the necessary md5sum, sha1sum and sha512sum rules
-#
-# The targets are specified using the srcs and conditioned_srcs attributes.
-# srcs is expected to be label list.
-# conditioned_srcs is a dictionary mapping conditions to label lists.
-#   It will be passed to select().
 def release_filegroup(name, srcs = None, conditioned_srcs = None, tags = None, visibility = None, **kwargs):
+    """Creates a variety of filegroups."""
+    # TODO(fejta): better function doc.
+
+    # Creates 3+N rules based on the provided targets:
+    # * A filegroup with just the provided targets (named 'name')
+    # * A filegroup containing all of the md5, sha1 and sha512 hash files ('name-hashes')
+    # * A filegroup containing both of the above ('name-and-hashes')
+    # * All of the necessary md5sum, sha1sum and sha512sum rules
+
+    # The targets are specified using the srcs and conditioned_srcs attributes.
+    # srcs is expected to be label list.
+    # conditioned_srcs is a dictionary mapping conditions to label lists.
+    #   It will be passed to select().
     if not srcs and not conditioned_srcs:
         fail("srcs and conditioned_srcs cannot both be empty")
     srcs = srcs or []

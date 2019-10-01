@@ -20,5 +20,4 @@ set -o nounset
 set -o pipefail
 set -o xtrace
 
-
 bazel test @io_k8s_repo_infra//hack:verify-deps

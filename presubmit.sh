@@ -45,7 +45,6 @@ export GO111MODULE=off # TODO(fejta): get rid of this
   set -o xtrace
   bazel test //... # This also builds everything
   ./verify/verify-boilerplate.sh --rootdir="$(pwd)" -v
-  GOPATH="${GOPATH}:$(pwd)/bazel-bin/verify/verify-go-src-go_path" ./verify/verify-go-src.sh --rootdir "$(pwd)" -v
   ./verify/verify-bazel.sh
   buildifier -mode=check $(find . -name BUILD -o -name '*.bzl' -type f -not -wholename '*/vendor/*')
 )

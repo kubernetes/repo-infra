@@ -5,6 +5,8 @@ test_suite(
     tags = ["lint"],  # picks up all non-manual targets with this tag
 )
 
+_BUILDIFIER = "@com_github_bazelbuild_buildtools//buildifier"
+
 _GAZELLE = "@bazel_gazelle//cmd/gazelle"
 
 _GO = "@go_sdk//:bin/go"
@@ -17,10 +19,12 @@ sh_binary(
     name = "update-bazel",
     srcs = ["update-bazel.sh"],
     args = [
+        "$(location %s)" % _BUILDIFIER,
         "$(location %s)" % _GAZELLE,
         "$(location %s)" % _KAZEL,
     ],
     data = [
+        _BUILDIFIER,
         _GAZELLE,
         _KAZEL,
     ],
@@ -31,11 +35,13 @@ sh_binary(
     srcs = ["update-deps.sh"],
     args = [
         "$(location %s)" % _GO,
+        "$(location :update-bazel)",
+        "$(location %s)" % _BUILDIFIER,
         "$(location %s)" % _GAZELLE,
         "$(location %s)" % _KAZEL,
-        "$(location :update-bazel)",
     ],
     data = [
+        _BUILDIFIER,
         _GAZELLE,
         _GO,
         _KAZEL,
@@ -54,11 +60,13 @@ sh_test(
     name = "verify-bazel",
     srcs = ["verify-bazel.sh"],
     args = [
+        "$(location %s)" % _BUILDIFIER,
         "$(location %s)" % _GAZELLE,
         "$(location %s)" % _KAZEL,
     ],
     data = [
         "@//:all-srcs",
+        _BUILDIFIER,
         _GAZELLE,
         _KAZEL,
     ],
@@ -71,11 +79,13 @@ sh_test(
     args = [
         "$(location :update-deps)",
         "$(location %s)" % _GO,
+        "$(location :update-bazel)",
+        "$(location %s)" % _BUILDIFIER,
         "$(location %s)" % _GAZELLE,
         "$(location %s)" % _KAZEL,
-        "$(location :update-bazel)",
     ],
     data = [
+        _BUILDIFIER,
         _GAZELLE,
         _GO,
         _KAZEL,

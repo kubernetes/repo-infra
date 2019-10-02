@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Packages used by go.mod."""
+"""Configures repositories required by repo-infra."""
 
-load("@bazel_gazelle//:deps.bzl", "go_repository")
+load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
+load("@bazel_skylib//lib:versions.bzl", "versions")
+load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
 def go_repositories():
-    """Packages used by go.mod, created by gazelle."""
+    """Packages used by go.mod, created by @io_k8s_repo_infra//hack:update-bazel."""
     go_repository(
         name = "cc_mvdan_interfacer",
         build_file_generation = "on",
@@ -213,7 +217,7 @@ def go_repositories():
     go_repository(
         name = "com_github_golang_protobuf",
         build_file_generation = "on",
-        build_file_proto_mode = "disable",
+        build_file_proto_mode = "disable_global",  # Avoid import cycle
         importpath = "github.com/golang/protobuf",
         sum = "h1:YF8+flBXS5eO826T4nzqPrxfhQThhXl0YzfuUPu4SBg=",
         version = "v1.3.1",
@@ -875,10 +879,14 @@ def go_repositories():
         version = "v0.3.2",
     )
     go_repository(
-        name = "org_golang_x_tools_random_extra_stuff",  # Why???
+        name = "org_golang_x_tools",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/tools",
+        patch_args = ["-p1"],
+        patches = [
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",  # Add go_tool_library targets
+        ],
         sum = "h1:bw9doJza/SFBEweII/rHQh338oozWyiFsBRHtrflcws=",
         version = "v0.0.0-20190920225731-5eefd052ad72",
     )
@@ -1234,3 +1242,18 @@ def go_repositories():
         sum = "h1:SvFZT6jyqRaOeXpc5h/JSfZenJ2O330aBsf7JfSUXmQ=",
         version = "v0.0.0-20190308202827-9d24e82272b4",
     )
+
+def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None, go_modules = go_repositories):
+    if minimum_bazel_version:  # Allow an additional downstream constraint
+        versions.check(minimum_bazel_version = minimum_bazel_version)
+    versions.check(minimum_bazel_version = "0.29.1")  # Minimum rules for this repo
+    rbe_autoconfig(name = "rbe_default")
+    protobuf_deps()  # No options
+
+    go_rules_dependencies()  # No options
+    go_register_toolchains(go_version = None, nogo = None)
+
+    gazelle_dependencies()  # TODO(fejta): go_sdk and go_repository_default_cache
+
+    if go_modules:
+        go_modules()

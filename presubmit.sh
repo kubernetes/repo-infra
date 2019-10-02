@@ -18,31 +18,15 @@ set -o errexit
 set -o pipefail
 
 cd "$(git rev-parse --show-toplevel)"
-export GOPATH=${GOPATH:-$HOME/go}
-mkdir -p "$GOPATH"
+
 if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
   echo "Service account detected. Adding --config=ci to bazel commands" >&2
   mkdir -p "$HOME"
   touch "$HOME/.bazelrc"
   echo "build --config=ci" >> "$HOME/.bazelrc"
 fi
-tools=(
-  //:go
-  //:gofmt
-  //:golangci-lint
-  //:buildifier
-)
-(
-  # Download all tool outputs until we migrate to using bazel run
-  set -o xtrace
-  bazel build --experimental_remote_download_outputs=all "${tools[@]}"
-)
-export PATH=$PATH:$GOPATH/bin:$PWD/bazel-bin
-export GOPATH=$GOPATH:/go  # TODO(fejta): fix this prow hack
-export GO111MODULE=off # TODO(fejta): get rid of this
-# Build first since we need the generated protobuf for the govet checks
 (
   set -o xtrace
   bazel test //... # This also builds everything
-  ./verify/verify-boilerplate.sh --rootdir="$(pwd)" -v
+  ./verify/verify-boilerplate.sh --rootdir="$(pwd)" -v # TODO(fejta) migrate to bazel
 )

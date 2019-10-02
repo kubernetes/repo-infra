@@ -73,6 +73,34 @@ sh_test(
     tags = ["lint"],
 )
 
+# TODO(fejta): refactor this some more
+py_test(
+    name = "verify-boilerplate",
+    srcs = ["verify_boilerplate.py"],
+    args = ["--boilerplate-dir=$(location //verify/boilerplate:boilerplate.go.txt)"],
+    data = [
+        "//verify/boilerplate:boilerplate.go.txt",
+        "//verify/boilerplate:templates",
+        "@//:all-srcs",
+    ],
+    main = "verify_boilerplate.py",
+    python_version = "PY3",
+    tags = ["lint"],
+)
+
+py_test(
+    name = "verify_boilerplate_test",
+    srcs = [
+        "verify_boilerplate.py",
+        "verify_boilerplate_test.py",
+    ],
+    data = [
+        "//verify/boilerplate:templates",
+        "//verify/boilerplate:testdata",
+    ],
+    python_version = "PY3",
+)
+
 sh_test(
     name = "verify-deps",
     srcs = ["verify-deps.sh"],

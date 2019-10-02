@@ -43,8 +43,8 @@ buildifier=$1
 gazelle=$2
 kazel=$3
 
-gazelle_diff=$("$gazelle" fix --mode=diff --external=external)
-kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./.kazelcfg.json)
+gazelle_diff=$("$gazelle" fix --mode=diff --external=external || echo "ERROR: gazelle diffs")
+kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./.kazelcfg.json || echo "ERROR: kazel diffs")
 # TODO(fejta): --mode=diff --lint=warn
 buildifier_diff=$(find . \
   -name BUILD -o -name BUILD.bazel -o -name '*.bzl' -type f \

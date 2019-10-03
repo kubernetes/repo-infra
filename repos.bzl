@@ -1247,11 +1247,12 @@ def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version
     if minimum_bazel_version:  # Allow an additional downstream constraint
         versions.check(minimum_bazel_version = minimum_bazel_version)
     versions.check(minimum_bazel_version = "0.29.1")  # Minimum rules for this repo
-    rbe_autoconfig(name = "rbe_default")
+    if rbe_name:
+        rbe_autoconfig(name = rbe_name)
     protobuf_deps()  # No options
 
     go_rules_dependencies()  # No options
-    go_register_toolchains(go_version = None, nogo = None)
+    go_register_toolchains(go_version = go_version, nogo = nogo)
 
     gazelle_dependencies()  # TODO(fejta): go_sdk and go_repository_default_cache
 

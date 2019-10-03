@@ -14,43 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# TODO(fejta): delete this file
+
 set -o errexit
 set -o nounset
 set -o pipefail
+set -o xtrace
 
-# This script is intended to be used via subtree in a top-level directory:
-# <repo>/
-#  repo-infra/
-#    verify/
-
-REPO_ROOT=$(dirname "${BASH_SOURCE}")/../..
-
-boilerDir="${REPO_ROOT}/repo-infra/verify/boilerplate"
-boiler="${boilerDir}/boilerplate.py"
-
-files_need_boilerplate=($(${boiler} "$@"))
-
-# Run boilerplate.py unit tests
-unitTestOut="$(mktemp)"
-trap cleanup EXIT
-cleanup() {
-	rm "${unitTestOut}"
-}
-
-pushd "${boilerDir}" >/dev/null
-if ! python -m unittest boilerplate_test 2>"${unitTestOut}"; then
-	echo "boilerplate_test.py failed"
-	echo
-	cat "${unitTestOut}"
-	exit 1
-fi
-popd >/dev/null
-
-# Run boilerplate check
-if [[ ${#files_need_boilerplate[@]} -gt 0 ]]; then
-  for file in "${files_need_boilerplate[@]}"; do
-    echo "Boilerplate header is wrong for: ${file}"
-  done
-
-  exit 1
-fi
+bazel test @io_k8s_repo_infra//hack:verify-boilerplate

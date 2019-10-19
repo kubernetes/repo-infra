@@ -5,6 +5,8 @@ load("//:load.bzl", "repositories")
 
 repositories()
 
-load("//:repos.bzl", "configure")
+load("//:repos.bzl", "configure", "go_repositories")
 
 configure()
+
+go_repositories()

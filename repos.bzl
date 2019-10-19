@@ -1243,7 +1243,7 @@ def go_repositories():
         version = "v0.0.0-20190308202827-9d24e82272b4",
     )
 
-def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None, go_modules = go_repositories):
+def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None):
     if minimum_bazel_version:  # Allow an additional downstream constraint
         versions.check(minimum_bazel_version = minimum_bazel_version)
     versions.check(minimum_bazel_version = "0.29.1")  # Minimum rules for this repo
@@ -1255,6 +1255,3 @@ def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version
     go_register_toolchains(go_version = go_version, nogo = nogo)
 
     gazelle_dependencies()  # TODO(fejta): go_sdk and go_repository_default_cache
-
-    if go_modules:
-        go_modules()

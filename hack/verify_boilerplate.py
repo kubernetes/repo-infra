@@ -40,7 +40,7 @@ def get_args():
     parser.add_argument(
         '--skip',
         default=[
-            'external',
+            'external/bazel_tools',
             '.git',
             'node_modules',
             '_output',

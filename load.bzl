@@ -15,6 +15,13 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 def repositories():
+    if not native.existing_rule("subpar"):
+        http_archive(
+            name = "subpar",
+            urls = ["https://github.com/google/subpar/archive/2.0.0.tar.gz"],
+            sha256 = "b80297a1b8d38027a86836dbadc22f55dc3ecad56728175381aa6330705ac10f",
+            strip_prefix = "subpar-2.0.0",
+        )
     if not native.existing_rule("bazel_skylib"):
         http_archive(
             name = "bazel_skylib",

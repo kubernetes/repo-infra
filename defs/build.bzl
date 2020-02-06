@@ -58,7 +58,7 @@ gcs_upload = rule(
             allow_files = True,
         ),
         "uploader": attr.label(
-            default = Label("//defs:gcs_uploader"),
+            default = Label("//defs:gcs_uploader.par"),
             allow_files = True,
         ),
         # TODO: combine with 'data' when label_keyed_string_dict is supported in Bazel

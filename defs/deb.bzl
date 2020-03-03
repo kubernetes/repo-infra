@@ -49,7 +49,7 @@ def deb_data(name, goarch = "amd64", data = [], tags = None, visibility = None):
     deps = []
     for i, info in enumerate(data):
         dname = "%s-deb-data-%s-%s" % (name, goarch, i)
-        deps += [dname]
+        deps.append(dname)
         pkg_tar(
             name = dname,
             srcs = select({"@io_bazel_rules_go//go/platform:" + goarch: info["files"]}),

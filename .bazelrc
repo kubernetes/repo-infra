@@ -26,6 +26,9 @@ build:remote --remote_timeout=3600
 # Alt: --google_credentials=some_file.json
 build:remote --google_default_credentials=true
 
+# Improve cache hit rate
+build:remote --incompatible_strict_action_env=true
+
 # Minimize what is downloaded
 build:inmemory --experimental_inmemory_jdeps_files
 build:inmemory --experimental_inmemory_dotd_files

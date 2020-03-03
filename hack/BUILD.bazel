@@ -146,6 +146,7 @@ sh_test(
         "@//:all-srcs",
         _GO,
         _GOLANGCI_LINT,
+        "@go_sdk//:files",
     ],
     tags = ["lint"],
 )

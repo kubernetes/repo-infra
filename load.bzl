@@ -35,11 +35,11 @@ def repositories():
     if not native.existing_rule("bazel_toolchains"):
         http_archive(
             name = "bazel_toolchains",
-            sha256 = "b5a8039df7119d618402472f3adff8a1bd0ae9d5e253f53fcc4c47122e91a3d2",
-            strip_prefix = "bazel-toolchains-2.1.1",
+            sha256 = "1342f84d4324987f63307eb6a5aac2dff6d27967860a129f5cd40f8f9b6fd7dd",
+            strip_prefix = "bazel-toolchains-2.2.0",
             urls = [
-                "https://github.com/bazelbuild/bazel-toolchains/releases/download/2.1.1/bazel-toolchains-2.1.1.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/2.1.1.tar.gz",
+                "https://github.com/bazelbuild/bazel-toolchains/releases/download/2.2.0/bazel-toolchains-2.2.0.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/2.2.0.tar.gz",
             ],
         )
 
@@ -88,10 +88,10 @@ def repositories():
     if not native.existing_rule("com_github_bazelbuild_buildtools"):
         http_archive(
             name = "com_github_bazelbuild_buildtools",
-            sha256 = "86f62b307c9b4f6f4df7c4b3b583a617f10d32a13af3f8d8c311e4f87010410e",
-            strip_prefix = "buildtools-1.0.0",
+            sha256 = "7e9603607769f48e67dad0b04c1311484fc437a989405acc8462f3aa68e50eb0",
+            strip_prefix = "buildtools-2.2.1",
             urls = [
-                "https://github.com/bazelbuild/buildtools/archive/1.0.0.tar.gz",
+                "https://github.com/bazelbuild/buildtools/archive/2.2.1.tar.gz",
             ],
         )
 

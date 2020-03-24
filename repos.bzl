@@ -23,7 +23,7 @@ load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_depe
 def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None):
     if minimum_bazel_version:  # Allow an additional downstream constraint
         versions.check(minimum_bazel_version = minimum_bazel_version)
-    versions.check(minimum_bazel_version = "0.29.1")  # Minimum rules for this repo
+    versions.check(minimum_bazel_version = "2.2.0")  # Minimum rules for this repo
     if rbe_name:
         rbe_autoconfig(name = rbe_name)
     protobuf_deps()  # No options

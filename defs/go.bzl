@@ -84,7 +84,7 @@ def _go_genrule_impl(ctx):
     env.update(ctx.configuration.default_shell_env)
     env.update(go.env)
     env.update({
-        "PATH": ctx.configuration.host_path_separator.join(["/bin", "/usr/bin"]),
+        "PATH": ctx.configuration.host_path_separator.join(["/usr/local/bin", "/bin", "/usr/bin"]),
         "GOPATH": paths.join(ctx.bin_dir.path, paths.dirname(ctx.build_file_path), "gopath"),
         "GOROOT": paths.dirname(go.sdk.root_file.path),
     })

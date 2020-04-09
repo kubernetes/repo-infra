@@ -325,8 +325,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/golangci/golangci-lint",
-        sum = "h1:/rWK6IXb9k554NPStxDapUgHsJhKf73AsSWvYqIDkp8=",
-        version = "v1.23.7",
+        sum = "h1:OcmSTTMPqI/VT4GvN1fKuE9NX15dDXIwolO0l08334U=",
+        version = "v1.24.0",
     )
 
     go_repository(
@@ -989,8 +989,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "honnef.co/go/tools",
-        sum = "h1:3JgtbtFHMiCmsznwGVTUWbgGov+pVqnlf1dEJTNAXeM=",
-        version = "v0.0.1-2019.2.3",
+        sum = "h1:sXmLre5bzIR6ypkjXCDI3jHPssRhc8KD/Ome589sc3U=",
+        version = "v0.0.1-2020.1.3",
     )
     go_repository(
         name = "com_github_anmitsu_go_shlex",
@@ -1742,8 +1742,8 @@ def go_repositories():
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "github.com/tommy-muehle/go-mnd",
-        sum = "h1:4D0wuPKjOTiK2garzuPGGvm4zZ/wLYDOH8TJSABC7KU=",
-        version = "v1.1.1",
+        sum = "h1:RC4maTWLKKwb7p1cnoygsbKIgNlJqSYBeAFON3Ar8As=",
+        version = "v1.3.1-0.20200224220436-e6f9a994e8fa",
     )
     go_repository(
         name = "in_gopkg_ini_v1",

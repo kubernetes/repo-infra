@@ -6,7 +6,7 @@ go_library(
     importpath = "k8s.io/repo-infra/tools/build_tar",
     visibility = ["//visibility:private"],
     deps = [
-        "@io_k8s_klog//:go_default_library",
+        "@io_k8s_klog_v2//:go_default_library",
         "@org_golang_x_build//pargzip:go_default_library",
     ],
 )

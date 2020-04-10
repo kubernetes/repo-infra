@@ -829,12 +829,12 @@ def go_repositories():
         version = "v2.2.7",
     )
     go_repository(
-        name = "io_k8s_klog",
+        name = "io_k8s_klog_v2",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
-        importpath = "k8s.io/klog",
-        sum = "h1:Pt+yjF5aB1xDSVbau4VsWe+dQNzA0qv1LlXdC2dF6Q8=",
-        version = "v1.0.0",
+        importpath = "k8s.io/klog/v2",
+        sum = "h1:Foj74zO6RbjjP4hBEKjnYtjjAhGg4jNynUdYF6fJrok=",
+        version = "v2.0.0",
     )
     go_repository(
         name = "org_golang_x_build",

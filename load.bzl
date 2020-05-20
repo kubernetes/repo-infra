@@ -22,6 +22,8 @@ def repositories():
             sha256 = "b80297a1b8d38027a86836dbadc22f55dc3ecad56728175381aa6330705ac10f",
             strip_prefix = "subpar-2.0.0",
         )
+
+    # https://github.com/bazelbuild/bazel-skylib/releases
     if not native.existing_rule("bazel_skylib"):
         http_archive(
             name = "bazel_skylib",
@@ -32,14 +34,15 @@ def repositories():
             sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
         )
 
+    # https://github.com/bazelbuild/bazel-toolchains/releases
     if not native.existing_rule("bazel_toolchains"):
         http_archive(
             name = "bazel_toolchains",
-            sha256 = "239a1a673861eabf988e9804f45da3b94da28d1aff05c373b013193c315d9d9e",
-            strip_prefix = "bazel-toolchains-3.0.1",
+            sha256 = "d0a2219b1d9edbc430413127b9e01502bb35b3e0bdd14b5a53ad1c30ee4fda5e",
+            strip_prefix = "bazel-toolchains-3.1.2",
             urls = [
-                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.0.1/bazel-toolchains-3.0.1.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.0.1.tar.gz",
+                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.1.2/bazel-toolchains-3.1.2.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.1.2.tar.gz",
             ],
         )
 
@@ -66,16 +69,20 @@ def repositories():
             ],
         )
 
+    # https://github.com/bazelbuild/bazel-gazelle#running-gazelle-with-bazel
+    # v0.21 needs rules_go 0.23
     if not native.existing_rule("bazel_gazelle"):
         http_archive(
             name = "bazel_gazelle",
+            #sha256 = "bfd86b3cbe855d6c16c6fce60d76bd51f5c8dbc9cfcaef7a2bb5c1aafd0710e8",
+            sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
             urls = [
                 "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
                 "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
             ],
-            sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
         )
 
+    # https://github.com/bazelbuild/rules_proto#getting-started
     if not native.existing_rule("rules_proto"):
         http_archive(
             name = "rules_proto",
@@ -87,6 +94,8 @@ def repositories():
             ],
         )
 
+    # https://github.com/bazelbuild/buildtools/releases
+    # TODO(fejta): kazel needs a fix for 3.0.0
     if not native.existing_rule("com_github_bazelbuild_buildtools"):
         http_archive(
             name = "com_github_bazelbuild_buildtools",
@@ -97,9 +106,10 @@ def repositories():
             ],
         )
 
+    # https://github.com/bazelbuild/rules_nodejs/releases
     if not native.existing_rule("bazel_build_rules_nodejs"):
         http_archive(
             name = "build_bazel_rules_nodejs",
-            sha256 = "f9e7b9f42ae202cc2d2ce6d698ccb49a9f7f7ea572a78fd451696d03ef2ee116",
-            urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/1.6.0/rules_nodejs-1.6.0.tar.gz"],
+            sha256 = "d14076339deb08e5460c221fae5c5e9605d2ef4848eee1f0c81c9ffdc1ab31c1",
+            urls = ["https://github.com/bazelbuild/rules_nodejs/releases/download/1.6.1/rules_nodejs-1.6.1.tar.gz"],
         )

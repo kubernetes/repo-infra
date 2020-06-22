@@ -38,11 +38,11 @@ def repositories():
     if not native.existing_rule("bazel_toolchains"):
         http_archive(
             name = "bazel_toolchains",
-            sha256 = "d0a2219b1d9edbc430413127b9e01502bb35b3e0bdd14b5a53ad1c30ee4fda5e",
-            strip_prefix = "bazel-toolchains-3.1.2",
+            sha256 = "a802b753e127a6f73f3f300db5dd83fb618cd798bc880b6a87db9a8777b7939f",
+            strip_prefix = "bazel-toolchains-3.3.0",
             urls = [
-                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.1.2/bazel-toolchains-3.1.2.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.1.2.tar.gz",
+                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.3.0/bazel-toolchains-3.3.0.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.3.0.tar.gz",
             ],
         )
 

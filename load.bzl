@@ -38,11 +38,11 @@ def repositories():
     if not native.existing_rule("bazel_toolchains"):
         http_archive(
             name = "bazel_toolchains",
-            sha256 = "6d54b26a58457f9fca2e54f053402061ffe73e3b909b8f6bf6dedb2a3db093ea",
-            strip_prefix = "bazel-toolchains-3.3.2",
+            sha256 = "882fecfc88d3dc528f5c5681d95d730e213e39099abff2e637688a91a9619395",
+            strip_prefix = "bazel-toolchains-3.4.0",
             urls = [
-                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.3.2/bazel-toolchains-3.3.2.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.3.2.tar.gz",
+                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.4.0/bazel-toolchains-3.4.0.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.4.0.tar.gz",
             ],
         )
 
@@ -58,14 +58,14 @@ def repositories():
         )
 
     # Check https://github.com/bazelbuild/rules_go/releases for new releases
-    # 0.22.7 supports Golang 1.14.5 and 1.13.13
+    # 0.22.8 supports Golang 1.14.6 and 1.13.14
     if not native.existing_rule("io_bazel_rules_go"):
         http_archive(
             name = "io_bazel_rules_go",
-            sha256 = "d9d71a5fdfcf5f5326f1ffc4bcaea6519cb4fcfe0aaee6ae68c7440ee8b46bc8",
+            sha256 = "38392eb0617c1a9fdff17c4a284f012da13e4feefbaf87d04b3579b107902e9b",
             urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.22.7/rules_go-v0.22.7.tar.gz",
-                "https://github.com/bazelbuild/rules_go/releases/download/v0.22.7/rules_go-v0.22.7.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.22.8/rules_go-v0.22.8.tar.gz",
+                "https://github.com/bazelbuild/rules_go/releases/download/v0.22.8/rules_go-v0.22.8.tar.gz",
             ],
         )
 

@@ -18,9 +18,18 @@ load("@bazel_gazelle//:deps.bzl", "gazelle_dependencies", "go_repository")
 load("@bazel_skylib//lib:versions.bzl", "versions")
 load("@bazel_toolchains//rules:rbe_repo.bzl", "rbe_autoconfig")
 load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+load(
+    "@io_bazel_rules_go//go:deps.bzl",
+    "go_download_sdk",
+    "go_register_toolchains",
+    "go_rules_dependencies",
+)
+load(
+    "@io_k8s_repo_infra//go:sdk_versions.bzl",
+    "OVERRIDE_GO_VERSIONS",
+)
 
-def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None):
+def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None, override_go_version = None):
     if minimum_bazel_version:  # Allow an additional downstream constraint
         versions.check(minimum_bazel_version = minimum_bazel_version)
     versions.check(minimum_bazel_version = "2.2.0")  # Minimum rules for this repo
@@ -29,7 +38,12 @@ def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version
     protobuf_deps()  # No options
 
     go_rules_dependencies()  # No options
-    go_register_toolchains(go_version = go_version, nogo = nogo)
+
+    if override_go_version:
+        go_download_sdk(name = "go_sdk", sdks = OVERRIDE_GO_VERSIONS[override_go_version])
+        go_register_toolchains(nogo = nogo)
+    else:
+        go_register_toolchains(go_version = go_version, nogo = nogo)
 
     gazelle_dependencies()  # TODO(fejta): go_sdk and go_repository_default_cache
 

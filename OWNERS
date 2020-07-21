@@ -5,5 +5,12 @@ approvers:
 - justaugustus
 - mikedanese
 
+reviewers:
+- Verolop
+
 emeritus_approvers:
 - ixdy
+
+labels:
+- sig/release
+- area/release-eng

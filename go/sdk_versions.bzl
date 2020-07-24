@@ -13,6 +13,52 @@
 # limitations under the License.
 
 OVERRIDE_GO_VERSIONS = {
+    "1.15.0-rc.1": {
+        "darwin_amd64": (
+            "go1.15rc1.darwin-amd64.tar.gz",
+            "0572e053ed5fd6e8d6ed24f62832b747d46787288e146e8ba99b574b6e0d67b0",
+        ),
+        "freebsd_386": (
+            "go1.15rc1.freebsd-386.tar.gz",
+            "479c98371fd29426378596fbc94f96bdc4ac4a9d2bcb4f1ddbc4c1d4edb09ab5",
+        ),
+        "freebsd_amd64": (
+            "go1.15rc1.freebsd-amd64.tar.gz",
+            "9b14badd4b8dc881c9a15c2493565107ec92e78a71a51c7251cc0c377f92c3f9",
+        ),
+        "linux_386": (
+            "go1.15rc1.linux-386.tar.gz",
+            "e8b09a03cf057fe68806c0d2954ab8d9ca3002558d8ce60a196b836dacb91f4b",
+        ),
+        "linux_amd64": (
+            "go1.15rc1.linux-amd64.tar.gz",
+            "ac092ebb92f88366786063e68a9531d5eccac51371f9becb128f064721731b2e",
+        ),
+        "linux_arm64": (
+            "go1.15rc1.linux-arm64.tar.gz",
+            "3baf4336d1bcf1c6707c6e2a402a31cbc87cbd9a63687c97c5149911fe0e5beb",
+        ),
+        "linux_arm": (
+            "go1.15rc1.linux-armv6l.tar.gz",
+            "d42df2b62fc7569931fb458952b518e1ee102294efcc4e28c54cce76a7f4cd8f",
+        ),
+        "linux_ppc64le": (
+            "go1.15rc1.linux-ppc64le.tar.gz",
+            "a8599883755d188d24a5012f72f99b3237c2f5223bc1f937b6f055456c1468e3",
+        ),
+        "linux_s390x": (
+            "go1.15rc1.linux-s390x.tar.gz",
+            "0a16994b1f988db12aa44aa9965ae4d07d067489c321e5f7445eb2be63fe2466",
+        ),
+        "windows_386": (
+            "go1.15rc1.windows-386.zip",
+            "2e5f90da04f2ba073501eeb7931b897c9d57c9f8e079ee77620c6b1e4f9a8bdf",
+        ),
+        "windows_amd64": (
+            "go1.15rc1.windows-amd64.zip",
+            "cc05edc8620ed280dc4540b28312fdd99019a2a14693b6cc9158a26b43e67df3",
+        ),
+    },
     "1.15.0-beta.1": {
         "darwin_amd64": (
             "go1.15beta1.darwin-amd64.tar.gz",

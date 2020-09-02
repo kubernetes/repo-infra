@@ -62,17 +62,30 @@ def repo_infra_patches():
         sum = "h1:gyjaxf+svBWX08ZjK86iN9geUJF0H6gp2IRKX6Nf6/I=",
         version = "v1.3.3",
     )
+
+    # Must be kept in sync with rules_go version
+    # To update this:
+    # 1. Navigate to https://github.com/bazelbuild/rules_go/tree/<new-rules_go-version>/go/private/repositories.bzl
+    # 2. Note the golang.org/x/tools repo SHA
+    #    Example: https://github.com/bazelbuild/rules_go/blob/9429f5029721210fbe24f8543d6c7b26e50a3b94/go/private/repositories.bzl#L76-L79
+    # 3. Query for the module info at that SHA
+    #    Example: go mod download -x -json golang.org/x/tools@2bc93b1c0c88b2406b967fcd19a623d1ff9ea0cd
+    # 4. Note the "Sum" value (NOT "GoModSum") and update the "sum" parameter below
+    # 5. Run ./hack/update-bazel.sh
     go_repository(
-        name = "org_golang_x_tools",  # Must keep in sync with rules_go version
+        name = "org_golang_x_tools",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/tools",
         patch_args = ["-p1"],
         patches = [
-            "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",  # Add go_tool_library targets
+            # extras adds go_tool_library rules for packages under
+            # go/analysis/passes and their dependencies. These are needed by
+            # nogo.
+            "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
         ],
-        sum = "h1:zE128a8BUJqwFqwi8LxUnOdV3eSOGIzDhiIV/QW8eXc=",
-        version = "v0.0.0-20200221191710-57f3fb51f507",
+        sum = "h1:4j84u0sokprDu3IdSYHJMmou+YSLflMz8p7yAx/QI4g=",
+        version = "v0.0.0-20200512131952-2bc93b1c0c88",
     )
 
 def go_repositories():

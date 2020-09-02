@@ -28,21 +28,21 @@ def repositories():
         http_archive(
             name = "bazel_skylib",
             urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
-                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
+                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.3/bazel-skylib-1.0.3.tar.gz",
             ],
-            sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
+            sha256 = "1c531376ac7e5a180e0237938a2536de0c54d93f5c278634818e0efc952dd56c",
         )
 
     # https://github.com/bazelbuild/bazel-toolchains/releases
     if not native.existing_rule("bazel_toolchains"):
         http_archive(
             name = "bazel_toolchains",
-            sha256 = "7ebb200ed3ca3d1f7505659c7dfed01c4b5cb04c3a6f34140726fe22f5d35e86",
-            strip_prefix = "bazel-toolchains-3.4.1",
+            sha256 = "caf516464966470c075c33fae53c33ada5f32f1d43dbeaaea7388fe6e006d001",
+            strip_prefix = "bazel-toolchains-3.4.2",
             urls = [
-                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.4.1/bazel-toolchains-3.4.1.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.4.1.tar.gz",
+                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.4.2/bazel-toolchains-3.4.2.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.4.2.tar.gz",
             ],
         )
 
@@ -58,15 +58,15 @@ def repositories():
         )
 
     # Check https://github.com/bazelbuild/rules_go/releases for new releases
-    # v0.22.11 supports Golang 1.15.0
+    # v0.23.9 supports Golang 1.15.1
     # If this is updated, please ensure that bazel-toolchains is also updated
     if not native.existing_rule("io_bazel_rules_go"):
         http_archive(
             name = "io_bazel_rules_go",
-            sha256 = "e02b302e8b6cb4a771feba99d36d04b13947ef22f51bea38632c0ab885cabe12",
+            sha256 = "be9b8be722745ff475051a2f37ebad9e234d48635d9e6d70f8b96c000336fc8d",
             urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.22.11/rules_go-v0.22.11.tar.gz",
-                "https://github.com/bazelbuild/rules_go/releases/download/v0.22.11/rules_go-v0.22.11.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.9/rules_go-v0.23.9.tar.gz",
+                "https://github.com/bazelbuild/rules_go/releases/download/v0.23.9/rules_go-v0.23.9.tar.gz",
             ],
         )
 

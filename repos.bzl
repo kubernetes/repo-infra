@@ -51,27 +51,34 @@ def repo_infra_go_repositories():
     go_repositories()
     repo_infra_patches()
 
+# THESE REQUIRE CUSTOM EDITS. PLEASE MAINTAIN.
+#
+# Must be kept in sync with rules_go version
+# To update these:
+# 1. Navigate to https://github.com/bazelbuild/rules_go/tree/<new-rules_go-version>/go/private/repositories.bzl
+# 2. Note the golang.org/x/tools repo SHA
+#    Example: https://github.com/bazelbuild/rules_go/blob/9429f5029721210fbe24f8543d6c7b26e50a3b94/go/private/repositories.bzl#L76-L79
+# 3. Query for the module info at that SHA
+#    Example: go mod download -x -json golang.org/x/tools@2bc93b1c0c88b2406b967fcd19a623d1ff9ea0cd
+# 4. Note the "Sum" value (NOT "GoModSum") and update the "sum" parameter below
+# 5. Run ./hack/update-bazel.sh
 def repo_infra_patches():
-    # These require custom edits, please maintain
-
+    # Up-to-date as of 9/10/2020
     go_repository(
         name = "com_github_golang_protobuf",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",  # Avoid import cyle
         importpath = "github.com/golang/protobuf",
-        sum = "h1:gyjaxf+svBWX08ZjK86iN9geUJF0H6gp2IRKX6Nf6/I=",
-        version = "v1.3.3",
+        patch_args = ["-p1"],
+        patches = [
+            # additional targets may depend on generated code for well known types
+            "@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch",
+        ],
+        sum = "h1:ZFgWrT+bLgsYPirOnRfKLYJLvssAegOj/hgyMFdJZe0=",
+        version = "v1.4.1",
     )
 
-    # Must be kept in sync with rules_go version
-    # To update this:
-    # 1. Navigate to https://github.com/bazelbuild/rules_go/tree/<new-rules_go-version>/go/private/repositories.bzl
-    # 2. Note the golang.org/x/tools repo SHA
-    #    Example: https://github.com/bazelbuild/rules_go/blob/9429f5029721210fbe24f8543d6c7b26e50a3b94/go/private/repositories.bzl#L76-L79
-    # 3. Query for the module info at that SHA
-    #    Example: go mod download -x -json golang.org/x/tools@2bc93b1c0c88b2406b967fcd19a623d1ff9ea0cd
-    # 4. Note the "Sum" value (NOT "GoModSum") and update the "sum" parameter below
-    # 5. Run ./hack/update-bazel.sh
+    # Up-to-date as of 9/10/2020
     go_repository(
         name = "org_golang_x_tools",
         build_file_generation = "on",

@@ -38,11 +38,11 @@ def repositories():
     if not native.existing_rule("bazel_toolchains"):
         http_archive(
             name = "bazel_toolchains",
-            sha256 = "89a053218639b1c5e3589a859bb310e0a402dedbe4ee369560e66026ae5ef1f2",
-            strip_prefix = "bazel-toolchains-3.5.0",
+            sha256 = "4fb3ceea08101ec41208e3df9e56ec72b69f3d11c56629d6477c0ff88d711cf7",
+            strip_prefix = "bazel-toolchains-3.6.0",
             urls = [
-                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.5.0/bazel-toolchains-3.5.0.tar.gz",
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.5.0.tar.gz",
+                "https://github.com/bazelbuild/bazel-toolchains/releases/download/3.6.0/bazel-toolchains-3.6.0.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-toolchains/archive/3.6.0.tar.gz",
             ],
         )
 
@@ -58,15 +58,15 @@ def repositories():
         )
 
     # Check https://github.com/bazelbuild/rules_go/releases for new releases
-    # v0.23.10 supports Golang 1.15.2
+    # v0.23.12 supports Golang 1.15.3
     # If this is updated, please ensure that bazel-toolchains is also updated
     if not native.existing_rule("io_bazel_rules_go"):
         http_archive(
             name = "io_bazel_rules_go",
-            sha256 = "d9a9d51999acc7d60a5b58e20b391b907b3eaa9c670c1faa07c5e4a93bd8da36",
+            sha256 = "df76f2a947aef03979ea0b6b9551d55ecc1821e4097f86a8422fdeac80b9ecd4",
             urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.10/rules_go-v0.23.10.tar.gz",
-                "https://github.com/bazelbuild/rules_go/releases/download/v0.23.10/rules_go-v0.23.10.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.12/rules_go-v0.23.12.tar.gz",
+                "https://github.com/bazelbuild/rules_go/releases/download/v0.23.12/rules_go-v0.23.12.tar.gz",
             ],
         )
 

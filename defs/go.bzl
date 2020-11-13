@@ -49,7 +49,7 @@ def _go_genrule_impl(ctx):
             args.add(target.path)
 
             ctx.actions.run(
-                executable = "mv",
+                executable = "cp",
                 arguments = [args],
                 inputs = [srcfile],
                 outputs = [target],

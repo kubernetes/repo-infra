@@ -33,10 +33,12 @@ def _compute_genrule_variables(srcs, outs):
 def _go_genrule_impl(ctx):
     go = go_context(ctx)
 
+    gopath_placeholder = ctx.actions.declare_file("gopath/placeholder")
+    ctx.actions.run_shell(outputs = [gopath_placeholder], command = "touch gopath/placeholder")
+
     transitive_libs = depset(transitive = [d[GoArchive].transitive for d in ctx.attr.go_deps])
 
     gopath_files = []
-    gopath_dir = ctx.actions.declare_directory("gopath")
     for lib in transitive_libs.to_list():
         for srcfile in lib.srcs:
             target = ctx.actions.declare_file(paths.join(
@@ -53,7 +55,7 @@ def _go_genrule_impl(ctx):
                 executable = "mv",
                 arguments = [args],
                 inputs = [srcfile],
-                outputs = [target, gopath_dir],
+                outputs = [target],
                 mnemonic = "PrepareGopath",
             )
 
@@ -86,7 +88,7 @@ def _go_genrule_impl(ctx):
     env.update(go.env)
     env.update({
         "PATH": ctx.configuration.host_path_separator.join(["/usr/local/bin", "/bin", "/usr/bin"]),
-        "GOPATH": gopath_dir.path,
+        "GOPATH": paths.dirname(gopath_placeholder.path),
         "GOROOT": paths.dirname(go.sdk.root_file.path),
     })
 

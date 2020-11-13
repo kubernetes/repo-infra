@@ -63,7 +63,7 @@ def repo_infra_go_repositories():
 # 4. Note the "Sum" value (NOT "GoModSum") and update the "sum" parameter below
 # 5. Run ./hack/update-bazel.sh
 def repo_infra_patches():
-    # Up-to-date as of 10/21/2020
+    # Up-to-date as of 11/13/2020
     go_repository(
         name = "com_github_golang_protobuf",
         build_file_generation = "on",
@@ -78,7 +78,7 @@ def repo_infra_patches():
         version = "v1.4.1",
     )
 
-    # Up-to-date as of 10/21/2020
+    # Up-to-date as of 11/13/2020
     go_repository(
         name = "org_golang_x_tools",
         build_file_generation = "on",

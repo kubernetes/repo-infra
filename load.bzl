@@ -58,15 +58,15 @@ def repositories():
         )
 
     # Check https://github.com/bazelbuild/rules_go/releases for new releases
-    # v0.23.12 supports Golang 1.15.3
+    # v0.23.15 supports Golang 1.15.5
     # If this is updated, please ensure that bazel-toolchains is also updated
     if not native.existing_rule("io_bazel_rules_go"):
         http_archive(
             name = "io_bazel_rules_go",
-            sha256 = "df76f2a947aef03979ea0b6b9551d55ecc1821e4097f86a8422fdeac80b9ecd4",
+            sha256 = "e3f4c9aef825c2ac023d0d78f74f7bc22b4b918a329b2d1b888b2978ff5ac154",
             urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.12/rules_go-v0.23.12.tar.gz",
-                "https://github.com/bazelbuild/rules_go/releases/download/v0.23.12/rules_go-v0.23.12.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.15/rules_go-v0.23.15.tar.gz",
+                "https://github.com/bazelbuild/rules_go/releases/download/v0.23.15/rules_go-v0.23.15.tar.gz",
             ],
         )
 

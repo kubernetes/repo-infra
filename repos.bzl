@@ -30,10 +30,10 @@ load(
 )
 load("@io_k8s_repo_infra//defs:private/gcilint_repository.bzl", "gci_lint_repository")
 
-def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None, override_go_version = None):
+def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = "1.15.5", nogo = None, override_go_version = None):
     if minimum_bazel_version:  # Allow an additional downstream constraint
         versions.check(minimum_bazel_version = minimum_bazel_version)
-    versions.check(minimum_bazel_version = "2.2.0")  # Minimum rules for this repo
+    versions.check(minimum_bazel_version = "3.4.1")  # Minimum rules for this repo
     if rbe_name:
         rbe_autoconfig(name = rbe_name)
     protobuf_deps()  # No options
@@ -68,36 +68,34 @@ def repo_infra_go_repositories():
 # 4. Note the "Sum" value (NOT "GoModSum") and update the "sum" parameter below
 # 5. Run ./hack/update-bazel.sh
 def repo_infra_patches():
-    # Up-to-date as of 11/13/2020
+    # Up-to-date as of 2021-01-04
     go_repository(
         name = "com_github_golang_protobuf",
         build_file_generation = "on",
         build_file_proto_mode = "disable_global",  # Avoid import cyle
         importpath = "github.com/golang/protobuf",
-        patch_args = ["-p1"],
-        patches = [
-            # additional targets may depend on generated code for well known types
-            "@io_bazel_rules_go//third_party:com_github_golang_protobuf-extras.patch",
-        ],
-        sum = "h1:ZFgWrT+bLgsYPirOnRfKLYJLvssAegOj/hgyMFdJZe0=",
-        version = "v1.4.1",
+        sum = "h1:JjCZWpVbqXDqFVmTfYWEVTMIYrL/NPdPSCHPJ0T/raM=",
+        version = "v1.4.3",
     )
 
-    # Up-to-date as of 11/13/2020
+    # Up-to-date as of 2021-01-04
     go_repository(
         name = "org_golang_x_tools",
         build_file_generation = "on",
         build_file_proto_mode = "disable",
         importpath = "golang.org/x/tools",
-        patch_args = ["-p1"],
-        patches = [
-            # extras adds go_tool_library rules for packages under
-            # go/analysis/passes and their dependencies. These are needed by
-            # nogo.
-            "@io_bazel_rules_go//third_party:org_golang_x_tools-extras.patch",
-        ],
-        sum = "h1:4j84u0sokprDu3IdSYHJMmou+YSLflMz8p7yAx/QI4g=",
-        version = "v0.0.0-20200512131952-2bc93b1c0c88",
+        sum = "h1:MMcSHxsZhqeYZ8XBuSXMQ1QVZwJfG6cZD73JLWLXgg4=",
+        version = "v0.0.0-20201201192219-a1b87a1c0de4",
+    )
+
+    # Up-to-date as of 2021-01-04
+    go_repository(
+        name = "org_golang_google_genproto",
+        build_file_generation = "on",
+        build_file_proto_mode = "disable",
+        importpath = "google.golang.org/genproto",
+        sum = "h1:wYR00/Ht+i/79g/gzhdehBgLIJCklKoc8Q/NebdzzpY=",
+        version = "v0.0.0-20201201144952-b05cb90ed32e",
     )
 
 def go_repositories():

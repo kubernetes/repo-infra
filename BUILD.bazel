@@ -1,6 +1,8 @@
 # gazelle:prefix k8s.io/repo-infra
 # gazelle:exclude hack
 # gazelle:proto disable
+# gazelle:go_naming_convention go_default_library
+# gazelle:go_naming_convention_external go_default_library
 
 # Use the Bazel-vendored protobuf library since we use go_proto_library
 # gazelle:resolve go github.com/golang/protobuf/proto @com_github_golang_protobuf//proto:go_default_library

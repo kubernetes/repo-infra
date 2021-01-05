@@ -28,6 +28,7 @@ load(
     "@io_k8s_repo_infra//go:sdk_versions.bzl",
     "OVERRIDE_GO_VERSIONS",
 )
+load("@io_k8s_repo_infra//defs:private/gcilint_repository.bzl", "gci_lint_repository")
 
 def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = None, nogo = None, override_go_version = None):
     if minimum_bazel_version:  # Allow an additional downstream constraint
@@ -46,6 +47,10 @@ def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version
         go_register_toolchains(go_version = go_version, nogo = nogo)
 
     gazelle_dependencies()  # TODO(fejta): go_sdk and go_repository_default_cache
+
+    gci_lint_repository(
+        name = "com_github_golangci_golangci_lint",
+    )
 
 def repo_infra_go_repositories():
     go_repositories()

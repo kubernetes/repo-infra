@@ -21,5 +21,4 @@ package hack
 import (
 	_ "github.com/bazelbuild/bazel-gazelle/cmd/gazelle"
 	_ "github.com/bazelbuild/buildtools/buildifier"
-	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
 )

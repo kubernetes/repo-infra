@@ -28,7 +28,7 @@ workspace_binary(
 
 workspace_binary(
     name = "golangci-lint",
-    cmd = "@com_github_golangci_golangci_lint//cmd/golangci-lint",
+    cmd = "@com_github_golangci_golangci_lint//:golangci-lint",
 )
 
 workspace_binary(

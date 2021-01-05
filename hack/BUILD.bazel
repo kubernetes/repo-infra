@@ -13,7 +13,7 @@ _GO = "@go_sdk//:bin/go"
 
 _KAZEL = "@io_k8s_repo_infra//cmd/kazel"
 
-_GOLANGCI_LINT = "@com_github_golangci_golangci_lint//cmd/golangci-lint"
+_GOLANGCI_LINT = "@com_github_golangci_golangci_lint//:golangci-lint"
 
 sh_binary(
     name = "update-bazel",

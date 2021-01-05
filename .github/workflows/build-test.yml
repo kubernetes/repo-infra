@@ -1,0 +1,68 @@
+name: build-test
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+  workflow_dispatch: {}
+
+
+jobs:
+  build-test:
+    runs-on: ${{ matrix.os }}
+
+    env:
+      BAZELISK_VERSION: v1.7.4
+
+    defaults:
+      run:
+        shell: bash
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+        - macos-latest
+        - ubuntu-latest
+        include:
+        - os: macos-latest
+          platform: "darwin-amd64"
+          repo-cache: /var/tmp/_bazel_runner/cache/repos/v1
+        - os: ubuntu-latest
+          platform: "linux-amd64"
+          repo-cache: ~/.cache/bazel/_bazel_runner/cache/repos/v1
+
+    steps:
+    - name: "checkout-repo"
+      uses: actions/checkout@v2
+    - name: "setup-cache"
+      uses: actions/cache@v2
+      with:
+        path: ${{ matrix.repo-cache }}
+        key: ${{ runner.os }}-${{ hashFiles('.bazelversion') }}
+    - name: setup-workspace
+      run: |
+        mkdir -p "${GITHUB_WORKSPACE?}/bin/"
+        echo "${GITHUB_WORKSPACE?}/bin" >> "${GITHUB_PATH?}"
+    - name: install-bazel
+      env:
+        BAZELISK_PLATFORM: ${{ matrix.platform }}
+      run: |
+        curl --fail -sSL --retry 3 \
+          "https://github.com/bazelbuild/bazelisk/releases/download/${BAZELISK_VERSION}/bazelisk-${BAZELISK_PLATFORM}" \
+          -o "${GITHUB_WORKSPACE?}/bin/bazel"
+        chmod +x "${GITHUB_WORKSPACE?}/bin/bazel"
+        bazel info
+    - name: "build"
+      run: |
+        bazel build -k //...
+    - name: "test"
+      run: |
+        bazel test -k --test_tag_filters=-lint //...
+    - name: "lint"
+      if: ${{ runner.os == 'Linux' }}
+      run: |
+        bazel test -k --test_tag_filters=lint //...

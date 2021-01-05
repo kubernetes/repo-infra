@@ -31,8 +31,8 @@ github.com/bazelbuild/bazel-gazelle v0.21.1 h1:buszGdD9d/Z691sxFDgOdcEUWli0ZT2tB
 github.com/bazelbuild/bazel-gazelle v0.21.1/go.mod h1:xM5AuwJJYa2OUDBT+YqrZrcD8DW//aauZ+U424Wadlo=
 github.com/bazelbuild/buildtools v0.0.0-20190731111112-f720930ceb60 h1:OfyUN/Msd8yqJww6deQ9vayJWw+Jrbe6Qp9giv51QQI=
 github.com/bazelbuild/buildtools v0.0.0-20190731111112-f720930ceb60/go.mod h1:5JP0TXzWDHXv8qvxRC4InIazwdyDseBDbzESUMKk1yU=
-github.com/bazelbuild/buildtools v0.0.0-20200228172928-c9d9e342afdb h1:F2UHxHXipTXxTmIKALHwAdNsvTPhSkgshcTNCMPJj1M=
-github.com/bazelbuild/buildtools v0.0.0-20200228172928-c9d9e342afdb/go.mod h1:5JP0TXzWDHXv8qvxRC4InIazwdyDseBDbzESUMKk1yU=
+github.com/bazelbuild/buildtools v0.0.0-20200922170545-10384511ce98 h1:OhVnC5zU5QHQ+DUSmgOTPqPnJnrlFmrh2S0HKeHmpbw=
+github.com/bazelbuild/buildtools v0.0.0-20200922170545-10384511ce98/go.mod h1:5JP0TXzWDHXv8qvxRC4InIazwdyDseBDbzESUMKk1yU=
 github.com/bazelbuild/rules_go v0.0.0-20190719190356-6dae44dc5cab h1:wzbawlkLtl2ze9w/312NHZ84c7kpUCtlkD8HgFY27sw=
 github.com/bazelbuild/rules_go v0.0.0-20190719190356-6dae44dc5cab/go.mod h1:MC23Dc/wkXEyk3Wpq6lCqz0ZAYOZDw2DR5y3N1q2i7M=
 github.com/bmatcuk/doublestar v1.2.2 h1:oC24CykoSAB8zd7XgruHo33E0cHJf/WhQA/7BeXj+x0=

@@ -15,7 +15,7 @@
 """Rules for generating gocode at compile time."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@io_bazel_rules_go//go:def.bzl", "GoArchive", "GoLibrary", "go_context", "go_rule")
+load("@io_bazel_rules_go//go:def.bzl", "GoArchive", "GoLibrary", "go_context")
 
 def _compute_genrule_variables(srcs, outs):
     resolved_srcs = [src.path for src in srcs]

@@ -58,15 +58,14 @@ def repositories():
         )
 
     # Check https://github.com/bazelbuild/rules_go/releases for new releases
-    # v0.23.15 supports Golang 1.15.5
     # If this is updated, please ensure that bazel-toolchains is also updated
     if not native.existing_rule("io_bazel_rules_go"):
         http_archive(
             name = "io_bazel_rules_go",
-            sha256 = "e3f4c9aef825c2ac023d0d78f74f7bc22b4b918a329b2d1b888b2978ff5ac154",
+            sha256 = "7904dbecbaffd068651916dce77ff3437679f9d20e1a7956bff43826e7645fcc",
             urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.23.15/rules_go-v0.23.15.tar.gz",
-                "https://github.com/bazelbuild/rules_go/releases/download/v0.23.15/rules_go-v0.23.15.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
+                "https://github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
             ],
         )
 
@@ -75,11 +74,10 @@ def repositories():
     if not native.existing_rule("bazel_gazelle"):
         http_archive(
             name = "bazel_gazelle",
-            #sha256 = "bfd86b3cbe855d6c16c6fce60d76bd51f5c8dbc9cfcaef7a2bb5c1aafd0710e8",
-            sha256 = "d8c45ee70ec39a57e7a05e5027c32b1576cc7f16d9dd37135b0eddde45cf1b10",
+            sha256 = "222e49f034ca7a1d1231422cdb67066b885819885c356673cb1f72f748a3c9d4",
             urls = [
-                "https://storage.googleapis.com/bazel-mirror/github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
-                "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.20.0/bazel-gazelle-v0.20.0.tar.gz",
+                "https://mirror.bazel.build/github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz",
+                "https://github.com/bazelbuild/bazel-gazelle/releases/download/v0.22.3/bazel-gazelle-v0.22.3.tar.gz",
             ],
         )
 
@@ -100,10 +98,10 @@ def repositories():
     if not native.existing_rule("com_github_bazelbuild_buildtools"):
         http_archive(
             name = "com_github_bazelbuild_buildtools",
-            sha256 = "7e9603607769f48e67dad0b04c1311484fc437a989405acc8462f3aa68e50eb0",
-            strip_prefix = "buildtools-2.2.1",
+            sha256 = "a02ba93b96a8151b5d8d3466580f6c1f7e77212c4eb181cba53eb2cae7752a23",
+            strip_prefix = "buildtools-3.5.0",
             urls = [
-                "https://github.com/bazelbuild/buildtools/archive/2.2.1.tar.gz",
+                "https://github.com/bazelbuild/buildtools/archive/3.5.0.tar.gz",
             ],
         )
 

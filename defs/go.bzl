@@ -15,7 +15,7 @@
 """Rules for generating gocode at compile time."""
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@io_bazel_rules_go//go:def.bzl", "GoArchive", "GoLibrary", "go_context", "go_rule")
+load("@io_bazel_rules_go//go:def.bzl", "GoArchive", "GoLibrary", "go_context")
 
 def _compute_genrule_variables(srcs, outs):
     resolved_srcs = [src.path for src in srcs]
@@ -105,7 +105,7 @@ def _go_genrule_impl(ctx):
 # and thus depend on executing with a valid GOROOT. _go_genrule handles
 # dependencies on the Go toolchain and environment variables; the
 # macro go_genrule handles setting up GOPATH dependencies (using go_path).
-go_genrule = go_rule(
+go_genrule = rule(
     _go_genrule_impl,
     attrs = {
         "srcs": attr.label_list(allow_files = True),
@@ -122,6 +122,10 @@ go_genrule = go_rule(
         "importpath": attr.string(),
         "message": attr.string(),
         "executable": attr.bool(default = False),
+        "_go_context_data": attr.label(
+            default = "@io_bazel_rules_go//:go_context_data",
+        ),
     },
+    toolchains = ["@io_bazel_rules_go//go:toolchain"],
     output_to_genfiles = True,
 )

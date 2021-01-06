@@ -30,10 +30,14 @@ jobs:
         include:
         - os: macos-latest
           platform: "darwin-amd64"
-          repo-cache: /var/tmp/_bazel_runner/cache/repos/v1
+          cache-paths: |
+            /var/tmp/_bazel_runner/cache/repos/v1
+            ~/Library/Caches/bazelisk
         - os: ubuntu-latest
           platform: "linux-amd64"
-          repo-cache: ~/.cache/bazel/_bazel_runner/cache/repos/v1
+          cache-paths: |
+            ~/.cache/bazel/_bazel_runner/cache/repos/v1
+            ~/.cache/bazelisk
 
     steps:
     - name: "checkout-repo"
@@ -41,7 +45,7 @@ jobs:
     - name: "setup-cache"
       uses: actions/cache@v2
       with:
-        path: ${{ matrix.repo-cache }}
+        path: ${{ matrix.cache-paths }}
         key: ${{ runner.os }}-${{ hashFiles('.bazelversion') }}
     - name: setup-workspace
       run: |

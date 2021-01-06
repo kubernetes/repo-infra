@@ -86,10 +86,10 @@ def gci_lint_alias():
     native.alias(
         name = "golangci-lint",
         actual = select({
-            "@bazel_tools//src/conditions:darwin_x86_64": "darwin_amd64/golangci-lint",
-            "@bazel_tools//src/conditions:linux_aarch64": "linux_arm64/golangci-lint",
-            "@bazel_tools//src/conditions:linux_x86_64": "linux_amd64/golangci-lint",
-            "@bazel_tools//src/conditions:windows": "windows_amd64/golangci-lint",
+            "@io_bazel_rules_go//go/platform:darwin_amd64": "darwin_amd64/golangci-lint",
+            "@io_bazel_rules_go//go/platform:linux_arm64": "linux_arm64/golangci-lint",
+            "@io_bazel_rules_go//go/platform:linux_amd64": "linux_amd64/golangci-lint",
+            "@io_bazel_rules_go//go/platform:windows_amd64": "windows_amd64/golangci-lint",
             "//conditions:default": ":UNKNOWN_PLATFORM_FOR_GOLANGCI",
         }),
         visibility = ["//visibility:public"],

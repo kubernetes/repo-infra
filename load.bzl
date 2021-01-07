@@ -67,10 +67,16 @@ def repositories():
                 "https://mirror.bazel.build/github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
                 "https://github.com/bazelbuild/rules_go/releases/download/v0.25.1/rules_go-v0.25.1.tar.gz",
             ],
+            patch_args = ["-p1"],
+            patches = [
+                # Don't override TMPDIR in test runner.  See
+                # https://github.com/bazelbuild/rules_go/issues/2776 for
+                # details.
+                "@io_k8s_repo_infra//third_party/io_bazel_rules_go:dont-set-TEST_TMPDIR-to-TMPDIR-in-the-test-runner.patch",
+            ],
         )
 
     # https://github.com/bazelbuild/bazel-gazelle#running-gazelle-with-bazel
-    # v0.21 needs rules_go 0.23
     if not native.existing_rule("bazel_gazelle"):
         http_archive(
             name = "bazel_gazelle",

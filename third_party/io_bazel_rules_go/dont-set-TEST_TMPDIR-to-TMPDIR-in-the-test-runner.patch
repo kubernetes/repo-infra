@@ -1,0 +1,30 @@
+From d25e4d99b91901ef36ac118129b909e3c5f2d472 Mon Sep 17 00:00:00 2001
+From: Mike Danese <mikedanese@google.com>
+Date: Wed, 6 Jan 2021 18:25:29 -0800
+Subject: [PATCH] dont set TEST_TMPDIR to TMPDIR in the test runner
+
+This is a breaking change.
+
+Partially-Reverts: 9c1568a7f510fe306a59f8d09e91579a71f5e08c
+Fixes: #2776
+---
+ go/tools/bzltestutil/init.go | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/go/tools/bzltestutil/init.go b/go/tools/bzltestutil/init.go
+index 797ed242..ca9852ed 100644
+--- a/go/tools/bzltestutil/init.go
++++ b/go/tools/bzltestutil/init.go
+@@ -57,9 +57,4 @@ func init() {
+ 			os.Setenv("PWD", abs)
+ 		}
+ 	}
+-
+-	// Setup the bazel tmpdir as the go tmpdir.
+-	if tmpDir, ok := os.LookupEnv("TEST_TMPDIR"); ok {
+-		os.Setenv("TMPDIR", tmpDir)
+-	}
+ }
+-- 
+2.29.2.729.g45daf8777d-goog
+

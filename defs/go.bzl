@@ -63,16 +63,7 @@ def _go_genrule_impl(ctx):
 
     srcs = [src for srcs in ctx.attr.srcs for src in srcs.files.to_list()]
 
-    deps = depset(
-        gopath_files + srcs,
-        transitive =
-            # tools
-            [dep.files for dep in ctx.attr.tools] +
-            # go toolchain
-            [depset(go.sdk.libs + go.sdk.srcs + go.sdk.tools + [go.sdk.go])],
-    )
-
-    _, cmd, _ = ctx.resolve_command(
+    inputs, cmd, input_manifests = ctx.resolve_command(
         command = ctx.attr.cmd,
         attribute = "cmd",
         expand_locations = True,
@@ -81,6 +72,15 @@ def _go_genrule_impl(ctx):
             ctx.outputs.outs,
         ),
         tools = ctx.attr.tools,
+    )
+
+    deps = depset(
+        gopath_files + srcs + inputs,
+        transitive =
+            # tools
+            [dep.files for dep in ctx.attr.tools] +
+            # go toolchain
+            [depset(go.sdk.libs + go.sdk.srcs + go.sdk.tools + [go.sdk.go])],
     )
 
     env = dict()
@@ -92,11 +92,13 @@ def _go_genrule_impl(ctx):
         "GOROOT": paths.dirname(go.sdk.root_file.path),
     })
 
-    ctx.actions.run_shell(
+    ctx.actions.run(
         inputs = deps,
         outputs = ctx.outputs.outs,
         env = env,
-        command = cmd,
+        executable = cmd[0],
+        arguments = cmd[1:],
+        input_manifests = input_manifests,
         progress_message = "%s %s" % (ctx.attr.message, ctx),
         mnemonic = "GoGenrule",
     )

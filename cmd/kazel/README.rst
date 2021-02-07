@@ -13,7 +13,7 @@ Requirements:
 Usage:
 ######
 
-1. Get kazel by running ``go get k8s.io/repo-infra/kazel``.
+1. Get kazel by running ``go get k8s.io/repo-infra/cmd/kazel``.
 
 2. Create a ``.kazelcfg.json`` in the root of the repository. For the
    kazel repository, the ``.kazelcfg.json`` would look like:

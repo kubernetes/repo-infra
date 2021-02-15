@@ -33,7 +33,7 @@ load("@io_k8s_repo_infra//defs:private/gcilint_repository.bzl", "gci_lint_reposi
 def configure(minimum_bazel_version = None, rbe_name = "rbe_default", go_version = "1.15.5", nogo = None, override_go_version = None):
     if minimum_bazel_version:  # Allow an additional downstream constraint
         versions.check(minimum_bazel_version = minimum_bazel_version)
-    versions.check(minimum_bazel_version = "3.4.1")  # Minimum rules for this repo
+    versions.check(minimum_bazel_version = "2.2.0")  # Minimum rules for this repo
     if rbe_name:
         rbe_autoconfig(name = rbe_name)
     protobuf_deps()  # No options

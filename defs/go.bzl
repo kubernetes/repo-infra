@@ -90,6 +90,9 @@ def _go_genrule_impl(ctx):
         "PATH": ctx.configuration.host_path_separator.join(["/usr/local/bin", "/bin", "/usr/bin"]),
         "GOPATH": paths.dirname(gopath_placeholder.path),
         "GOROOT": paths.dirname(go.sdk.root_file.path),
+        # hack to tie us over until we fix this to use modules or stop using
+        # it.
+        "GO111MODULE": "off",
     })
 
     ctx.actions.run(

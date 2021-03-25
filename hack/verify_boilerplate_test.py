@@ -55,7 +55,7 @@ class TestBoilerplate(unittest.TestCase):
         './fail.py',
     ])) + '\n' # add trailing newline
 
-    self.assertEquals(output, expected)
+    self.assertEqual(output, expected)
 
 
 if __name__ == '__main__':

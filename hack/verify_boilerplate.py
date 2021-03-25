@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright 2015 The Kubernetes Authors.
+# Copyright The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -98,11 +98,11 @@ def file_passes(filename, refs, regexs):  # pylint: disable=too-many-locals
         # Pass the encoding parameter to avoid ascii decode error for some
         # platform.
         with open(filename, 'r', encoding='utf-8') as fp:
-            data = fp.read()
+            file_data = fp.read()
     except IOError:
         return False
 
-    if not data:
+    if not file_data:
         return True # Nothing to copyright in this empty file.
 
     basename = os.path.basename(filename)
@@ -112,21 +112,19 @@ def file_passes(filename, refs, regexs):  # pylint: disable=too-many-locals
     else:
         ref = refs[basename]
 
-    # check for and skip generated files
-    if is_generated(data):
-        return True
+    ref = ref.copy()
 
     # remove build tags from the top of Go files
     if extension == "go":
         con = regexs["go_build_constraints"]
-        (data, found) = con.subn("", data, 1)
+        (file_data, found) = con.subn("", file_data, 1)
 
     # remove shebang from the top of shell files
     if extension in ("sh", "py"):
         she = regexs["shebang"]
-        (data, found) = she.subn("", data, 1)
+        (file_data, found) = she.subn("", file_data, 1)
 
-    data = data.splitlines()
+    data = file_data.splitlines()
 
     # if our test file is smaller than the reference it surely fails!
     if len(ref) > len(data):
@@ -134,6 +132,13 @@ def file_passes(filename, refs, regexs):  # pylint: disable=too-many-locals
 
     # trim our file to the same number of lines as the reference file
     data = data[:len(ref)]
+
+    # remove the 'YEAR' placeholder from the ref if the file is generated
+    if is_generated(file_data):
+        for i, line in enumerate(ref):
+            ref[i] = line.replace("Copyright YEAR", "Copyright")
+            if ref[i] != line:
+                break
 
     year = regexs["year"]
     for datum in data:

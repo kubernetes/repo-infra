@@ -1,6 +1,6 @@
 package main
 
-import "github.com/RinkiyaKeDad/repo-infra/tree/master/cmd/depstat/cmd"
+import "k8s.io/repo-infra/cmd/depstat/cmd"
 
 func main() {
 	cmd.Execute()

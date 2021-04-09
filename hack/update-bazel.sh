@@ -23,9 +23,10 @@ elif ! command -v bazel &>/dev/null; then
   echo "Install bazel at https://bazel.build" >&2
   exit 1
 else
+  bazel=$(command -v bazelisk || command -v bazel)
   (
     set -o xtrace
-    bazel run @io_k8s_repo_infra//hack:update-bazel
+    "$bazel" run @io_k8s_repo_infra//hack:update-bazel
   )
   exit 0
 fi

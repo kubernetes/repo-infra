@@ -2,6 +2,8 @@
 
 `depstat` is a CLI for analyzing dependencies of Go modules enabled projects. 
 
+![depstat demo with k8s repo](./depstat-k8s-demo.gif)
+
 ## Installation 
 Currently, to test `depstat` out you can generate the binary directly by running `go build` in the project directory and then pointing to the location of the binary from the project whose dependencies you want to analyze. Releases will be supported once the repository for `depstat` gets finalized.
 

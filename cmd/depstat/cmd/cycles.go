@@ -34,7 +34,7 @@ var cyclesCmd = &cobra.Command{
 			}{
 				Cycles: cycles,
 			}
-			outputRaw, err := json.Marshal(outputObj)
+			outputRaw, err := json.MarshalIndent(outputObj, "", "\t")
 			if err != nil {
 				return err
 			}

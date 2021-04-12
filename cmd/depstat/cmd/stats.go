@@ -64,7 +64,7 @@ var statsCmd = &cobra.Command{
 				MaxDepth:  maxDepth,
 				TransDeps: transitiveDeps,
 			}
-			outputRaw, err := json.Marshal(outputObj)
+			outputRaw, err := json.MarshalIndent(outputObj, "", "\t")
 			if err != nil {
 				return err
 			}

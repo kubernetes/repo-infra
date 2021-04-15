@@ -7,6 +7,6 @@ repositories()
 
 load("//:repos.bzl", "configure", "repo_infra_go_repositories")
 
-configure(override_go_version = "1.15.11")
+configure()
 
 repo_infra_go_repositories()

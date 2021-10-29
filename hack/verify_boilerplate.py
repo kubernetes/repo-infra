@@ -221,7 +221,7 @@ def get_regexs():
     # dates can be any year between 2014 and the current year, company holder names can be anything
     regexs["date"] = re.compile(get_dates())
     # strip // +build \n\n build constraints
-    regexs["go_build_constraints"] = re.compile(r"^(// \+build.*\n)+\n",
+    regexs["go_build_constraints"] = re.compile(r"^(//( \+build|go:build).*\n)+\n",
                                                 re.MULTILINE)
     # strip #!.* from shell/python scripts
     regexs["shebang"] = re.compile(r"^(#!.*\n)\n*", re.MULTILINE)

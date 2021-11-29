@@ -125,7 +125,7 @@ def file_passes(filename, refs, regexs):  # pylint: disable=too-many-locals
 
     # check if we encounter a 'YEAR' placeholder if the file is generated
     if is_generated(file_data):
-        for i, line in enumerate(ref):
+        for i, line in enumerate(data):
             if "Copyright YEAR" in line:
                 return False
 

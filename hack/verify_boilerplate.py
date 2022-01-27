@@ -128,6 +128,7 @@ def file_passes(filename, refs, regexs):  # pylint: disable=too-many-locals
         for i, line in enumerate(data):
             if "Copyright YEAR" in line:
                 return False
+        return True
 
     year = regexs["year"]
     for datum in data:

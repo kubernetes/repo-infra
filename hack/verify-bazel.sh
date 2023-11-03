@@ -39,9 +39,15 @@ else
   exit 0
 fi
 
-buildifier=$1
-gazelle=$2
-kazel=$3
+buildifier=$(realpath $1)
+gazelle=$(realpath $2)
+kazel=$(realpath $3)
+
+# cp symlink as normal files https://github.com/kubernetes/repo-infra/issues/250
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
+cp -Lr . "$TMP"
+cd "$TMP"
 
 gazelle_diff=$("$gazelle" fix --mode=diff --external=external || echo "ERROR: gazelle diffs")
 kazel_diff=$("$kazel" --dry-run --print-diff --cfg-path=./.kazelcfg.json || echo "ERROR: kazel diffs")

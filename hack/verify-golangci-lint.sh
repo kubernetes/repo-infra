@@ -48,4 +48,6 @@ export GOROOT=$(cd "${go_bin_dir}/.." && pwd)
 PATH=${go_bin_dir}:$PATH
 export PATH
 shift 2
+export CGO_ENABLED=0
+go mod download
 "$golangci_lint" run "$@"

@@ -1,11 +1,6 @@
 run:
   timeout: 180s
   tests: true
-  skip-dirs:
-  - .git
-  - .tool
-  - vendor
-  - verify
 
 linters-settings:
   dupl:
@@ -22,6 +17,11 @@ linters:
   disable-all: true
 
 issues:
+  exclude-dirs:
+  - .git
+  - .tool
+  - vendor
+  - verify
   exclude-rules:
   - linters:
     - revive

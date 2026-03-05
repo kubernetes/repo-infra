@@ -368,7 +368,7 @@ func (f *tarFile) addTar(toAdd string) error {
 	return nil
 }
 
-func (f *tarFile) addDeb(toAdd string) error {
+func (f *tarFile) addDeb(_ string) error {
 	return fmt.Errorf("addDeb unimplemented")
 }
 

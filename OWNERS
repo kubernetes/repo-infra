@@ -1,21 +1,18 @@
-approvers:
-- BenTheElder
-- clarketm
-- fejta
-- justaugustus
-- mikedanese
+# See the OWNERS docs at https://go.k8s.io/owners
 
+approvers:
+  - sig-release-leads
+  - release-engineering-approvers
 reviewers:
-- BenTheElder
-- clarketm
-- fejta
-- justaugustus
-- mikedanese
-- Verolop
+  - release-engineering-reviewers
 
 emeritus_approvers:
-- ixdy
+  - BenTheElder
+  - clarketm
+  - fejta
+  - ixdy
+  - mikedanese
 
 labels:
-- sig/release
-- area/release-eng
+  - sig/release
+  - area/release-eng

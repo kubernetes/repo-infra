@@ -25,14 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        - macos-13
         - ubuntu-latest
         include:
-        - os: macos-13
-          platform: "darwin-amd64"
-          cache-paths: |
-            /var/tmp/_bazel_runner/cache/repos/v1
-            ~/Library/Caches/bazelisk
         - os: ubuntu-latest
           platform: "linux-amd64"
           cache-paths: |

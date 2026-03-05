@@ -1,5 +1,5 @@
 run:
-  deadline: 180s
+  timeout: 180s
   tests: true
   skip-dirs:
   - .git

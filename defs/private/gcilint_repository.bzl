@@ -18,28 +18,33 @@ hundreds of dependencies, so using the binary release avoids dependency
 management toil.
 """
 
-_VERSION = "1.34.1"
+_VERSION = "1.64.8"
 
 _PLATFORMS = [
     struct(
         os = "darwin",
         arch = "amd64",
-        sha256 = "6c3d87f9f6bccd5954de9954c1e75d7b521abdcc956e0643929a75cbf4c00aad",
+        sha256 = "b52aebb8cb51e00bfd5976099083fbe2c43ef556cef9c87e58a8ae656e740444",
+    ),
+    struct(
+        os = "darwin",
+        arch = "arm64",
+        sha256 = "70543d21e5b02a94079be8aa11267a5b060865583e337fe768d39b5d3e2faf1f",
     ),
     struct(
         os = "linux",
         arch = "amd64",
-        sha256 = "23e4a9d8f89729007c6d749c245f725c2dbcfb194f4099003f9b826f1d386ad1",
+        sha256 = "b6270687afb143d019f387c791cd2a6f1cb383be9b3124d241ca11bd3ce2e54e",
     ),
     struct(
         os = "linux",
         arch = "arm64",
-        sha256 = "3bdfb7e619c665878d90cb73d45b35e8af6d753421cb8be07c40b63f3215bb02",
+        sha256 = "a6ab58ebcb1c48572622146cdaec2956f56871038a54ed1149f1386e287789a5",
     ),
     struct(
         os = "windows",
         arch = "amd64",
-        sha256 = "04473b63ee17374e7a55fd7ebe7fe97bc510ae9883e9214798dae8e67de4ba48",
+        sha256 = "54c2ed3a6b4f2f5da1056fb6e83d6b73b592e06684b65a5999174fabbb251a8f",
     ),
 ]
 
@@ -87,6 +92,7 @@ def gci_lint_alias():
         name = "golangci-lint",
         actual = select({
             "@io_bazel_rules_go//go/platform:darwin_amd64": "darwin_amd64/golangci-lint",
+            "@io_bazel_rules_go//go/platform:darwin_arm64": "darwin_arm64/golangci-lint",
             "@io_bazel_rules_go//go/platform:linux_arm64": "linux_arm64/golangci-lint",
             "@io_bazel_rules_go//go/platform:linux_amd64": "linux_amd64/golangci-lint",
             "@io_bazel_rules_go//go/platform:windows_amd64": "windows_amd64/golangci-lint",

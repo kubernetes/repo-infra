@@ -41,9 +41,9 @@ jobs:
 
     steps:
     - name: "checkout-repo"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: "setup-cache"
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ${{ matrix.cache-paths }}
         key: ${{ runner.os }}-${{ hashFiles('.bazelversion') }}

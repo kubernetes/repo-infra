@@ -19,12 +19,10 @@ set -o pipefail
 
 cd "$(git rev-parse --show-toplevel)"
 
-if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]]; then
-  echo "Service account detected. Adding --config=ci to bazel commands" >&2
-  mkdir -p "$HOME"
-  touch "$HOME/.bazelrc"
-  echo "build --config=ci" >> "$HOME/.bazelrc"
-fi
+# NOTE: Remote Build Execution (RBE) is no longer available.
+# The --config=ci flag previously enabled RBE but the backend
+# (projects/k8s-prow-builds/instances/default_instance) has been
+# decommissioned. Bazel now runs locally.
 (
   set -o xtrace
   bazel test //... # This also builds everything

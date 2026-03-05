@@ -16,13 +16,13 @@ linters-settings:
 linters:
   enable:
   - govet
-  - deadcode
-  - golint
+  - unused
+  - revive
   - gocyclo
   disable-all: true
 
 issues:
   exclude-rules:
   - linters:
-    - golint
+    - revive
     text: ".*should not use dot dot imports"

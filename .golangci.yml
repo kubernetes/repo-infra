@@ -1,11 +1,6 @@
 run:
-  deadline: 180s
+  timeout: 180s
   tests: true
-  skip-dirs:
-  - .git
-  - .tool
-  - vendor
-  - verify
 
 linters-settings:
   dupl:
@@ -16,13 +11,18 @@ linters-settings:
 linters:
   enable:
   - govet
-  - deadcode
-  - golint
+  - unused
+  - revive
   - gocyclo
   disable-all: true
 
 issues:
+  exclude-dirs:
+  - .git
+  - .tool
+  - vendor
+  - verify
   exclude-rules:
   - linters:
-    - golint
+    - revive
     text: ".*should not use dot dot imports"

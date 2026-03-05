@@ -25,14 +25,8 @@ jobs:
       fail-fast: false
       matrix:
         os:
-        - macos-latest
         - ubuntu-latest
         include:
-        - os: macos-latest
-          platform: "darwin-amd64"
-          cache-paths: |
-            /var/tmp/_bazel_runner/cache/repos/v1
-            ~/Library/Caches/bazelisk
         - os: ubuntu-latest
           platform: "linux-amd64"
           cache-paths: |
@@ -41,9 +35,9 @@ jobs:
 
     steps:
     - name: "checkout-repo"
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
     - name: "setup-cache"
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: ${{ matrix.cache-paths }}
         key: ${{ runner.os }}-${{ hashFiles('.bazelversion') }}

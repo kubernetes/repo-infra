@@ -43,7 +43,11 @@ export GOPROXY=https://proxy.golang.org
 export GOSUMDB=sum.golang.org
 export HOME=$TEST_TMPDIR/home
 export GOPATH=$HOME/go
-PATH=$(dirname "$1"):$PATH
+go_bin_dir=$(cd "$(dirname "$1")" && pwd)
+export GOROOT=$(cd "${go_bin_dir}/.." && pwd)
+PATH=${go_bin_dir}:$PATH
 export PATH
 shift 2
+export CGO_ENABLED=0
+go mod download
 "$golangci_lint" run "$@"
